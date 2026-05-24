@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trevi — Pipeline</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <style>
+    .summary-detail { font-size: 13px; color: #555; margin-top: 4px; line-height: 1.5; }
+    .criterion-row { display: flex; justify-content: space-between; font-size: 12px; padding: 3px 0; }
+    .expand-btn { background: none; border: none; cursor: pointer; font-size: 11px; color: var(--verde); font-family: 'Josefin Sans',sans-serif; font-style: normal; letter-spacing:.06em; }
+    .detail-panel { display: none; background: var(--off-dark); border-radius: 4px; padding: 10px; margin-top: 8px; }
+    .stage-count { font-family: 'Josefin Sans',sans-serif; font-style:normal; font-size:11px; color:#999; margin-left:6px; }
+    .badge-no-video { font-family: 'Josefin Sans',sans-serif; font-style:normal; font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:#c0392b; background:#fdf0ee; border-radius:3px; padding:2px 5px; }
+    .btn-whatsapp { background:#25D366; color:white; border:none; border-radius:var(--radius); padding:5px 10px; font-family:'Josefin Sans',sans-serif; font-style:normal; font-size:11px; letter-spacing:.06em; cursor:pointer; text-decoration:none; display:inline-block; }
+    .btn-whatsapp:hover { background:#1ebe5d; }
+  </style>
+</head>
+<body>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
+
+  <header>
+    <div class="logo"><span>tre</span>vi — Pipeline</div>
+    <nav>
+      <a href="dashboard.html">← Vagas</a>
+      <a href="docs.html">Docs</a>
+      <a href="#" onclick="logout()">Sair</a>
+    </nav>
+  </header>
+
+  <div class="page">
+    <div id="job-header" class="loading dot-pulse" style="padding:8px 0;margin-bottom:16px">Carregando</div>
+
+    <div class="tabs">
+      <div class="tab active" id="tab-ranking" onclick="showTab('ranking')">
+        Ranking <span class="stage-count" id="count-ranking"></span>
+      </div>
+      <div class="tab" id="tab-kanban" onclick="showTab('kanban')">
+        Kanban <span class="stage-count" id="count-kanban"></span>
+      </div>
+    </div>
+
+    <!-- RANKING -->
+    <div id="view-ranking">
+      <div id="ranking-container" class="loading dot-pulse" style="padding:32px">Carregando candidatos</div>
+    </div>
+
+    <!-- KANBAN -->
+    <div id="view-kanban" style="display:none">
+      <div class="kanban" id="kanban-board">
+        <div class="kanban-col" data-stage="screened">
+          <div class="kanban-col-header">Triado <span class="stage-count" id="cnt-screened"></span></div>
+        </div>
+        <div class="kanban-col" data-stage="group">
+          <div class="kanban-col-header">Grupo <span class="stage-count" id="cnt-group"></span></div>
+        </div>
+        <div class="kanban-col" data-stage="interview">
+          <div class="kanban-col-header">1-1 <span class="stage-count" id="cnt-interview"></span></div>
+        </div>
+        <div class="kanban-col" data-stage="offer_sent">
+          <div class="kanban-col-header">Proposta <span class="stage-count" id="cnt-offer_sent"></span></div>
+        </div>
+        <div class="kanban-col" data-stage="hired">
+          <div class="kanban-col-header">Contratado <span class="stage-count" id="cnt-hired"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const jobId = jobParam();
+    let allCandidates = [];
+
+    async function init() {
+      const session = await requireAuth();
+      if (!session || !jobId) { window.location.href = 'dashboard.html'; return; }
+
+      const { data: job } = await sb.from('jobs').select('*, clients(name)').eq('id', jobId).single();
+      document.getElementById('job-header').className = '';
+      document.getElementById('job-header').innerHTML = `
+        <div style="font-family:Josefin Sans,sans-serif;font-style:normal;font-size:11px;letter-spacing:.08em;color:#666;text-transform:uppercase">${job?.clients?.name || ''}</div>
+        <h1 style="margin-top:4px">${job?.title || ''}</h1>
+      `;
+
+      await loadCandidates();
+      initKanban();
+    }
+
+    async function autoDisqualify(candidates) {
+      const noVideo = candidates.filter(c => c.stage === 'applied' && !c.loom_url);
+      if (!noVideo.length) return 0;
+      const ids = noVideo.map(c => c.id);
+      await sb.from('candidates').update({ stage: 'disqualified' }).in('id', ids);
+      // Update in-memory
+      ids.forEach(id => {
+        const c = candidates.find(x => x.id === id);
+        if (c) c.stage = 'disqualified';
+      });
+      return ids.length;
+    }
+
+    async function loadCandidates() {
+      const { data } = await sb.from('candidates')
+        .select('*')
+        .eq('job_id', jobId)
+        .order('ai_score', { ascending: false });
+
+      allCandidates = data || [];
+
+      await autoDisqualify(allCandidates);
+
+      const applied = allCandidates.filter(c => c.stage === 'applied');
+      const rest = allCandidates.filter(c => c.stage !== 'applied' && c.stage !== 'disqualified' && c.stage !== 'dismissed');
+      document.getElementById('count-ranking').textContent = applied.length ? `(${applied.length})` : '';
+      document.getElementById('count-kanban').textContent = rest.length ? `(${rest.length})` : '';
+
+      renderRanking(applied);
+      renderKanban(rest);
+    }
+
+    function renderRanking(candidates) {
+      const container = document.getElementById('ranking-container');
+      if (!candidates.length) {
+        container.className = '';
+        container.innerHTML = '<p style="color:#999;text-align:center;padding:32px">Nenhum candidato nesta etapa.</p>';
+        return;
+      }
+      container.className = '';
+      container.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nome</th>
+              <th>Score</th>
+              <th>Expectativa Salarial</th>
+              <th>Vídeo</th>
+              <th>Resumo IA</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${candidates.map((c, i) => {
+              const sc = c.ai_score || 0;
+              const cls = sc >= 85 ? 'high' : sc >= 65 ? 'mid' : 'low';
+              const summary = c.ai_summary;
+              const waNum = (c.whatsapp || '').replace(/\D/g, '');
+              const waLink = waNum ? `<a href="https://wa.me/${waNum}" target="_blank" class="btn-whatsapp">WhatsApp</a>` : '—';
+              return `
+                <tr>
+                  <td style="color:#999;font-size:13px">${i + 1}</td>
+                  <td>
+                    <strong style="font-style:normal">${c.name || '—'}</strong><br>
+                    <span style="font-size:12px;color:#666">${c.email || ''}</span><br>
+                    <div style="margin-top:4px">${waLink}</div>
+                  </td>
+                  <td><span class="score ${cls}">${sc}</span></td>
+                  <td>${c.salary_expectation ? 'R$ ' + Number(c.salary_expectation).toLocaleString('pt-BR') : '—'}</td>
+                  <td>${c.loom_url
+                    ? `<a href="${c.loom_url}" target="_blank" class="btn btn-secondary btn-sm">Ver</a>`
+                    : '<span class="badge-no-video">Sem vídeo</span>'}</td>
+                  <td>
+                    ${summary?.overall ? `
+                      <span class="summary-detail" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${summary.overall}</span>
+                      <button class="expand-btn" onclick="toggleDetail('detail-${c.id}')">Ver critérios ↓</button>
+                      <div class="detail-panel" id="detail-${c.id}">
+                        ${(summary.by_criterion || []).map(cr => `
+                          <div class="criterion-row">
+                            <span>${cr.criterion}</span>
+                            <span style="color:var(--verde);font-family:Josefin Sans,sans-serif;font-style:normal">${cr.score} — ${cr.note}</span>
+                          </div>
+                        `).join('')}
+                      </div>
+                    ` : '—'}
+                  </td>
+                  <td>
+                    <button class="btn btn-primary btn-sm" onclick="moverStage('${c.id}','screened')">Triar →</button>
+                    <button class="btn btn-secondary btn-sm" style="margin-top:4px" onclick="moverStage('${c.id}','disqualified')">Desq.</button>
+                  </td>
+                </tr>`;
+            }).join('')}
+          </tbody>
+        </table>`;
+    }
+
+    function renderKanban(candidates) {
+      const stages = ['screened', 'group', 'interview', 'offer_sent', 'hired'];
+      stages.forEach(stage => {
+        const col = document.querySelector(`.kanban-col[data-stage="${stage}"]`);
+        const stageCands = candidates.filter(c => c.stage === stage);
+        document.getElementById(`cnt-${stage}`).textContent = stageCands.length ? `(${stageCands.length})` : '';
+
+        const cards = stageCands.map(c => {
+          const waNum = (c.whatsapp || '').replace(/\D/g, '');
+          return `
+          <div class="kanban-card" data-id="${c.id}" data-stage="${c.stage}">
+            <div class="cand-name" style="font-style:normal">${c.name || '—'}</div>
+            <div class="cand-score">Score: ${c.ai_score || '?'}</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center">
+              ${c.loom_url
+                ? `<a href="${c.loom_url}" target="_blank" style="font-size:11px;color:var(--verde);font-family:Josefin Sans,sans-serif;font-style:normal">Ver vídeo →</a>`
+                : `<span class="badge-no-video">Sem vídeo</span>`}
+              ${waNum ? `<a href="https://wa.me/${waNum}" target="_blank" class="btn-whatsapp" style="font-size:10px;padding:3px 8px">WA</a>` : ''}
+            </div>
+          </div>`;
+        }).join('');
+
+        const header = col.querySelector('.kanban-col-header').outerHTML;
+        col.innerHTML = header + cards;
+      });
+    }
+
+    function initKanban() {
+      document.querySelectorAll('.kanban-col').forEach(col => {
+        Sortable.create(col, {
+          group: 'kanban',
+          animation: 150,
+          onEnd: async ({ item, to }) => {
+            const candidateId = item.dataset.id;
+            const newStage = to.dataset.stage;
+            await sb.from('candidates').update({ stage: newStage }).eq('id', candidateId);
+          }
+        });
+      });
+    }
+
+    function toggleDetail(id) {
+      const el = document.getElementById(id);
+      el.style.display = el.style.display === 'block' ? 'none' : 'block';
+    }
+
+    async function moverStage(candidateId, stage) {
+      await sb.from('candidates').update({ stage }).eq('id', candidateId);
+      await loadCandidates();
+    }
+
+    function showTab(tab) {
+      document.getElementById('view-ranking').style.display = tab === 'ranking' ? 'block' : 'none';
+      document.getElementById('view-kanban').style.display = tab === 'kanban' ? 'block' : 'none';
+      document.getElementById('tab-ranking').className = 'tab' + (tab === 'ranking' ? ' active' : '');
+      document.getElementById('tab-kanban').className = 'tab' + (tab === 'kanban' ? ' active' : '');
+    }
+
+    async function logout() { await sb.auth.signOut(); window.location.href = 'index.html'; }
+
+    init();
+  </script>
+</body>
+</html>

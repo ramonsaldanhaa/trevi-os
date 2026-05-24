@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trevi — Briefing</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .briefing-layout {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 32px;
+      margin-top: 28px;
+      align-items: start;
+    }
+    @media (max-width: 800px) { .briefing-layout { grid-template-columns: 1fr; } }
+
+    /* ── Stepper ── */
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 36px;
+    }
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1.5px solid var(--borda);
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      color: #aaa;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .step-label {
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #aaa;
+      transition: color 0.2s;
+      white-space: nowrap;
+    }
+    .step-line {
+      flex: 1;
+      height: 0.5px;
+      background: var(--borda);
+      margin: 0 12px;
+    }
+    .step-item.active .step-num {
+      background: var(--verde);
+      border-color: var(--verde);
+      color: var(--bg);
+    }
+    .step-item.active .step-label { color: var(--verde); font-weight: 600; }
+    .step-item.done .step-num {
+      background: rgba(26,58,42,0.12);
+      border-color: var(--verde);
+      color: var(--verde);
+    }
+    .step-item.done .step-label { color: var(--verde); }
+
+    /* ── Form phases ── */
+    .fase { display: none; }
+    .fase.active { display: block; }
+
+    .fase-title {
+      font-family: 'Cormorant', serif;
+      font-style: normal;
+      font-size: 28px;
+      color: var(--verde);
+      margin-bottom: 6px;
+    }
+    .fase-sub {
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #999;
+      margin-bottom: 28px;
+    }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-row .form-group { margin-bottom: 0; }
+    .form-hint {
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      color: #bbb;
+      margin-top: 4px;
+    }
+    textarea { min-height: 80px; resize: vertical; }
+    textarea.tall { min-height: 110px; }
+
+    .radio-group, .check-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .radio-opt, .check-opt {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border: 0.5px solid var(--borda);
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      background: white;
+      transition: border-color 0.12s, background 0.12s;
+    }
+    .radio-opt input, .check-opt input { display: none; }
+    .radio-opt.selected, .check-opt.selected {
+      border-color: var(--verde);
+      background: rgba(26,58,42,0.07);
+      color: var(--verde);
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 0.5px solid var(--borda);
+      margin-bottom: 16px;
+    }
+    .toggle-label {
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .toggle {
+      width: 40px;
+      height: 22px;
+      background: #ddd;
+      border-radius: 11px;
+      cursor: pointer;
+      position: relative;
+      transition: background 0.2s;
+    }
+    .toggle.on { background: var(--verde); }
+    .toggle::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      background: white;
+      border-radius: 50%;
+      transition: left 0.2s;
+    }
+    .toggle.on::after { left: 21px; }
+
+    /* ── Nav buttons ── */
+    .form-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 32px;
+      padding-top: 20px;
+      border-top: 0.5px solid var(--borda);
+    }
+    .nav-saving {
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: #bbb;
+    }
+
+    /* ── Review ── */
+    .review-section {
+      margin-bottom: 24px;
+    }
+    .review-section-label {
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #aaa;
+      margin-bottom: 10px;
+    }
+    .review-field {
+      display: flex;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 0.5px solid var(--borda);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .review-field:last-child { border-bottom: none; }
+    .review-key {
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #999;
+      min-width: 130px;
+      padding-top: 2px;
+    }
+    .review-val { color: #222; font-style: normal; }
+    .review-edit {
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      color: var(--verde);
+      cursor: pointer;
+      margin-left: auto;
+      padding-top: 2px;
+      flex-shrink: 0;
+    }
+
+    /* ── Assets panel ── */
+    .assets-panel {
+      background: white;
+      border: 0.5px solid var(--borda);
+      border-radius: var(--radius);
+      padding: 20px;
+      position: sticky;
+      top: 80px;
+    }
+    .asset-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 0.5px solid var(--borda);
+    }
+    .asset-item:last-child { border-bottom: none; }
+    .asset-name {
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .asset-status { font-size: 12px; color: #bbb; font-style: normal; }
+    .asset-status.ready { color: var(--verde); font-weight: 600; }
+
+    .progress-bar-wrap {
+      height: 3px;
+      background: var(--borda);
+      border-radius: 2px;
+      margin: 12px 0 20px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--verde);
+      border-radius: 2px;
+      transition: width 0.3s;
+    }
+  </style>
+</head>
+<body>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
+
+  <header>
+    <div class="logo"><span>tre</span>vi — Briefing</div>
+    <nav>
+      <a href="dashboard.html">← Vagas</a>
+      <a href="docs.html">Docs</a>
+      <a href="#" onclick="logout()">Sair</a>
+    </nav>
+  </header>
+
+  <div class="page">
+    <div id="job-header" style="margin-bottom:24px">
+      <div class="loading dot-pulse" style="padding:8px 0">Carregando</div>
+    </div>
+
+    <div class="briefing-layout">
+      <!-- LEFT: form -->
+      <div>
+
+        <!-- Stepper -->
+        <div class="stepper">
+          <div class="step-item active" id="step-1">
+            <div class="step-num">1</div>
+            <div class="step-label">Empresa</div>
+          </div>
+          <div class="step-line"></div>
+          <div class="step-item" id="step-2">
+            <div class="step-num">2</div>
+            <div class="step-label">A Vaga</div>
+          </div>
+          <div class="step-line"></div>
+          <div class="step-item" id="step-3">
+            <div class="step-num">3</div>
+            <div class="step-label">Compensação</div>
+          </div>
+          <div class="step-line"></div>
+          <div class="step-item" id="step-4">
+            <div class="step-num">4</div>
+            <div class="step-label">Revisão</div>
+          </div>
+        </div>
+
+        <!-- Fase 1: Empresa -->
+        <div class="fase active" id="fase-1">
+          <div class="fase-title">A Empresa</div>
+          <div class="fase-sub">Quem contrata e por que vale trabalhar aqui</div>
+
+          <div class="form-group">
+            <label>Setor e mercado</label>
+            <input type="text" id="f1-setor" placeholder="Ex: Agência de marketing digital, Home Improvement nos EUA">
+          </div>
+          <div class="form-group">
+            <label>Por que essa empresa existe</label>
+            <textarea class="tall" id="f1-proposito" placeholder="Propósito real — não frase de missão genérica. O que move quem fundou essa empresa?"></textarea>
+          </div>
+          <div class="form-group">
+            <label>O que diferencia trabalhar aqui</label>
+            <textarea id="f1-diferencial" placeholder="Ritmo, mercado, cultura, oportunidade de aprendizado, time..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Que tipo de pessoa performa bem aqui</label>
+            <textarea id="f1-cultura" placeholder="Descreva o comportamento, não o cargo. Ex: 'Quem vai bem aqui é autodidato, gosta de ritmo acelerado e não espera ser mandado...'"></textarea>
+            <div class="form-hint">Essa resposta vai direto para o anúncio e para a HSL.</div>
+          </div>
+          <div class="form-group">
+            <label>Idioma do anúncio</label>
+            <div class="radio-group" id="f1-idioma">
+              <div class="radio-opt selected" onclick="selectRadio('f1-idioma',this,'Português')" data-value="Português">Português</div>
+              <div class="radio-opt" onclick="selectRadio('f1-idioma',this,'Inglês')" data-value="Inglês">Inglês</div>
+              <div class="radio-opt" onclick="selectRadio('f1-idioma',this,'Português e Inglês')" data-value="Português e Inglês">PT + EN</div>
+            </div>
+            <div class="form-hint">Define o idioma da legenda gerada — use PT para empresas brasileiras, EN para mercado americano.</div>
+          </div>
+
+          <div class="form-nav">
+            <span></span>
+            <div style="display:flex;align-items:center;gap:16px">
+              <span class="nav-saving" id="saving-1"></span>
+              <button class="btn btn-primary" onclick="next(1)">Próximo →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fase 2: A Vaga -->
+        <div class="fase" id="fase-2">
+          <div class="fase-title">A Vaga</div>
+          <div class="fase-sub">O que essa pessoa faz — e o que ela não faz</div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Título do cargo</label>
+              <input type="text" id="f2-cargo" placeholder="Ex: Media Buyer Sênior">
+            </div>
+            <div class="form-group">
+              <label>Senioridade</label>
+              <select id="f2-senioridade">
+                <option value="">Selecionar</option>
+                <option>Júnior</option>
+                <option>Pleno</option>
+                <option>Sênior</option>
+                <option>Coordenador</option>
+                <option>Gerente</option>
+                <option>Diretor</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Responsabilidades principais</label>
+            <textarea class="tall" id="f2-responsabilidades" placeholder="Liste 3 a 5 atividades concretas e acionáveis. Uma por linha."></textarea>
+            <div class="form-hint">Seja específico: o que essa pessoa vai fazer no dia a dia, não o que ela precisa saber.</div>
+          </div>
+          <div class="form-group">
+            <label>O que essa pessoa NÃO vai fazer</label>
+            <textarea id="f2-nao-faz" placeholder="Elimine candidatos errados antes da triagem. Ex: 'Não faz atendimento ao cliente. Não cria os criativos.'"></textarea>
+            <div class="form-hint">Candidatos que esperam fazer isso vão se eliminar sozinhos ao ler.</div>
+          </div>
+          <div class="form-group">
+            <label>Requisitos mínimos</label>
+            <textarea id="f2-requisitos" placeholder="Somente o que é bloqueante. Se não tem, não entra. Ex: inglês C1, experiência com Meta Ads, disponibilidade imediata."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Modelo de trabalho</label>
+            <div class="radio-group" id="f2-modelo">
+              <div class="radio-opt" onclick="selectRadio('f2-modelo',this,'Presencial')">Presencial</div>
+              <div class="radio-opt" onclick="selectRadio('f2-modelo',this,'Híbrido')">Híbrido</div>
+              <div class="radio-opt" onclick="selectRadio('f2-modelo',this,'Remoto')">Remoto</div>
+            </div>
+          </div>
+
+          <div class="form-nav">
+            <button class="btn btn-secondary" onclick="back(2)">← Voltar</button>
+            <div style="display:flex;align-items:center;gap:16px">
+              <span class="nav-saving" id="saving-2"></span>
+              <button class="btn btn-primary" onclick="next(2)">Próximo →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fase 3: Compensação -->
+        <div class="fase" id="fase-3">
+          <div class="fase-title">Compensação</div>
+          <div class="fase-sub">O que a pessoa ganha — com números reais</div>
+
+          <div class="form-group">
+            <label>Salário fixo</label>
+            <input type="text" id="f3-salario" placeholder="Ex: R$ 3.500 ou faixa R$ 3.000 a R$ 4.500">
+            <div class="form-hint">Coloque o número. Candidato que descobre depois que está fora da faixa é tempo perdido dos dois lados.</div>
+          </div>
+
+          <div class="toggle-row">
+            <span class="toggle-label">Tem comissionamento?</span>
+            <div class="toggle" id="toggle-comissao" onclick="toggleComissao()"></div>
+          </div>
+          <div id="comissao-fields" style="display:none">
+            <div class="form-group">
+              <label>Regras e percentual</label>
+              <textarea id="f3-comissao-regras" placeholder="Ex: 5% sobre contratos fechados, pago no mês seguinte, sem teto."></textarea>
+            </div>
+            <div class="form-group">
+              <label>Exemplo de cenário real</label>
+              <input type="text" id="f3-comissao-exemplo" placeholder="Ex: Quem fecha R$ 50k/mês leva R$ 2.500 de comissão.">
+              <div class="form-hint">Exemplos concretos aumentam a qualidade dos candidatos que aplicam.</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Benefícios</label>
+            <div class="check-group" id="f3-beneficios">
+              <div class="check-opt" onclick="toggleCheck(this)">Vale transporte</div>
+              <div class="check-opt" onclick="toggleCheck(this)">Vale refeição</div>
+              <div class="check-opt" onclick="toggleCheck(this)">Vale alimentação</div>
+              <div class="check-opt" onclick="toggleCheck(this)">Plano de saúde</div>
+              <div class="check-opt" onclick="toggleCheck(this)">Plano odontológico</div>
+              <div class="check-opt" onclick="toggleCheck(this)">Home office</div>
+              <div class="check-opt" onclick="toggleCheck(this)">Horário flexível</div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Outros benefícios ou condições</label>
+            <input type="text" id="f3-outros-beneficios" placeholder="Ex: Equipamento fornecido, bônus anual, licença estendida...">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Horário</label>
+              <input type="text" id="f3-horario" placeholder="Ex: Segunda a sexta, 9h às 18h">
+            </div>
+            <div class="form-group">
+              <label>Início previsto</label>
+              <input type="text" id="f3-inicio" placeholder="Ex: Imediato ou data específica">
+            </div>
+          </div>
+
+          <div class="form-nav">
+            <button class="btn btn-secondary" onclick="back(3)">← Voltar</button>
+            <div style="display:flex;align-items:center;gap:16px">
+              <span class="nav-saving" id="saving-3"></span>
+              <button class="btn btn-primary" onclick="next(3)">Revisar →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fase 4: Revisão -->
+        <div class="fase" id="fase-4">
+          <div class="fase-title">Revisão</div>
+          <div class="fase-sub">Confira antes de gerar os assets</div>
+
+          <div id="review-content"></div>
+
+          <div class="form-nav">
+            <button class="btn btn-secondary" onclick="back(4)">← Editar</button>
+            <button class="btn btn-primary" id="btn-gerar" onclick="confirmarBriefing()">
+              Gerar Assets →
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: assets panel -->
+      <div>
+        <div class="assets-panel">
+          <h3 style="margin-bottom:4px">Assets da Vaga</h3>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="briefing-progress" style="width:0%"></div>
+          </div>
+
+          <div id="assets-list">
+            <div class="asset-item">
+              <span class="asset-name">RAI.docx</span>
+              <span class="asset-status" id="rai-status">Aguardando</span>
+            </div>
+            <div class="asset-item">
+              <span class="asset-name">Legenda</span>
+              <span class="asset-status" id="caption-status">Aguardando</span>
+            </div>
+            <div class="asset-item">
+              <span class="asset-name">Script HSL</span>
+              <span class="asset-status" id="slides-status">Aguardando</span>
+            </div>
+            <div class="asset-item">
+              <span class="asset-name">Criativo</span>
+              <span class="asset-status" id="creative-status">Aguardando</span>
+            </div>
+          </div>
+
+          <div id="generate-btn-area" style="margin-top:16px;display:none">
+            <button class="btn btn-primary" style="width:100%" onclick="generateAssets()">
+              Gerar Assets
+            </button>
+          </div>
+        </div>
+
+        <div style="margin-top:16px">
+          <div id="criteria-panel">
+            <h3 style="margin-bottom:8px">Critérios de Score IA</h3>
+            <div id="criteria-list" class="loading dot-pulse" style="padding:8px 0;font-size:12px">...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const jobId = jobParam();
+    let job = null;
+    let currentFase = 1;
+    const TOTAL_FASES = 3;
+
+    // ── Radio / checkbox helpers ─────────────────────────────
+    function selectRadio(groupId, el, value) {
+      document.querySelectorAll(`#${groupId} .radio-opt`).forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+      el.dataset.value = value;
+    }
+    function toggleCheck(el) {
+      el.classList.toggle('selected');
+    }
+    function toggleComissao() {
+      const toggle = document.getElementById('toggle-comissao');
+      const fields = document.getElementById('comissao-fields');
+      toggle.classList.toggle('on');
+      fields.style.display = toggle.classList.contains('on') ? 'block' : 'none';
+    }
+
+    // ── Collect form data ────────────────────────────────────
+    function collectData() {
+      const modeloEl = document.querySelector('#f2-modelo .selected');
+      const idiomaEl = document.querySelector('#f1-idioma .selected');
+      const beneficiosSel = [...document.querySelectorAll('#f3-beneficios .selected')].map(e => e.textContent.trim());
+      const comissaoOn = document.getElementById('toggle-comissao').classList.contains('on');
+      return {
+        empresa: {
+          setor:           document.getElementById('f1-setor').value.trim(),
+          proposito:       document.getElementById('f1-proposito').value.trim(),
+          diferencial:     document.getElementById('f1-diferencial').value.trim(),
+          cultura:         document.getElementById('f1-cultura').value.trim(),
+          idioma_anuncio:  idiomaEl ? idiomaEl.dataset.value || idiomaEl.textContent.trim() : 'Português',
+        },
+        vaga: {
+          cargo:            document.getElementById('f2-cargo').value.trim(),
+          senioridade:      document.getElementById('f2-senioridade').value,
+          responsabilidades:document.getElementById('f2-responsabilidades').value.trim(),
+          nao_faz:          document.getElementById('f2-nao-faz').value.trim(),
+          requisitos:       document.getElementById('f2-requisitos').value.trim(),
+          modelo:           modeloEl ? modeloEl.dataset.value || modeloEl.textContent.trim() : '',
+        },
+        compensacao: {
+          salario:           document.getElementById('f3-salario').value.trim(),
+          tem_comissao:      comissaoOn,
+          comissao_regras:   comissaoOn ? document.getElementById('f3-comissao-regras').value.trim() : '',
+          comissao_exemplo:  comissaoOn ? document.getElementById('f3-comissao-exemplo').value.trim() : '',
+          beneficios:        beneficiosSel,
+          outros_beneficios: document.getElementById('f3-outros-beneficios').value.trim(),
+          horario:           document.getElementById('f3-horario').value.trim(),
+          inicio:            document.getElementById('f3-inicio').value.trim(),
+        }
+      };
+    }
+
+    // ── Populate form from saved data ────────────────────────
+    function populateForm(data) {
+      if (!data) return;
+      const e = data.empresa || {};
+      const v = data.vaga || {};
+      const c = data.compensacao || {};
+      if (e.setor)       document.getElementById('f1-setor').value = e.setor;
+      if (e.proposito)   document.getElementById('f1-proposito').value = e.proposito;
+      if (e.diferencial) document.getElementById('f1-diferencial').value = e.diferencial;
+      if (e.cultura)     document.getElementById('f1-cultura').value = e.cultura;
+      if (e.idioma_anuncio) {
+        document.querySelectorAll('#f1-idioma .radio-opt').forEach(o => {
+          if (o.dataset.value === e.idioma_anuncio) o.classList.add('selected');
+          else o.classList.remove('selected');
+        });
+      }
+      if (v.cargo)            document.getElementById('f2-cargo').value = v.cargo;
+      if (v.senioridade)      document.getElementById('f2-senioridade').value = v.senioridade;
+      if (v.responsabilidades)document.getElementById('f2-responsabilidades').value = v.responsabilidades;
+      if (v.nao_faz)          document.getElementById('f2-nao-faz').value = v.nao_faz;
+      if (v.requisitos)       document.getElementById('f2-requisitos').value = v.requisitos;
+      if (v.modelo) {
+        document.querySelectorAll('#f2-modelo .radio-opt').forEach(o => {
+          if (o.textContent.trim() === v.modelo) { o.classList.add('selected'); o.dataset.value = v.modelo; }
+        });
+      }
+      if (c.salario)           document.getElementById('f3-salario').value = c.salario;
+      if (c.tem_comissao) {
+        document.getElementById('toggle-comissao').classList.add('on');
+        document.getElementById('comissao-fields').style.display = 'block';
+      }
+      if (c.comissao_regras)  document.getElementById('f3-comissao-regras').value = c.comissao_regras;
+      if (c.comissao_exemplo) document.getElementById('f3-comissao-exemplo').value = c.comissao_exemplo;
+      if (c.beneficios?.length) {
+        document.querySelectorAll('#f3-beneficios .check-opt').forEach(o => {
+          if (c.beneficios.includes(o.textContent.trim())) o.classList.add('selected');
+        });
+      }
+      if (c.outros_beneficios) document.getElementById('f3-outros-beneficios').value = c.outros_beneficios;
+      if (c.horario)           document.getElementById('f3-horario').value = c.horario;
+      if (c.inicio)            document.getElementById('f3-inicio').value = c.inicio;
+    }
+
+    // ── Save to Supabase ─────────────────────────────────────
+    async function save(fase) {
+      const el = document.getElementById(`saving-${fase}`);
+      if (el) el.textContent = 'Salvando...';
+      const data = collectData();
+      const filled = countFilled(data);
+      const progress = Math.round((filled / TOTAL_FASES) * 100);
+      await sb.from('jobs').update({
+        briefing_data: data,
+        briefing_status: 'in_progress'
+      }).eq('id', jobId);
+      document.getElementById('briefing-progress').style.width = progress + '%';
+      if (el) { el.textContent = 'Salvo'; setTimeout(() => { if(el) el.textContent = ''; }, 1500); }
+    }
+
+    function countFilled(data) {
+      let filled = 0;
+      if (data.empresa.proposito || data.empresa.setor) filled++;
+      if (data.vaga.cargo || data.vaga.responsabilidades) filled++;
+      if (data.compensacao.salario) filled++;
+      return filled;
+    }
+
+    // ── Navigation ───────────────────────────────────────────
+    async function next(fromFase) {
+      await save(fromFase);
+      if (fromFase < 3) {
+        goToFase(fromFase + 1);
+      } else {
+        renderReview();
+        goToFase(4);
+      }
+    }
+
+    function back(fromFase) {
+      goToFase(fromFase - 1);
+    }
+
+    function goToFase(n) {
+      currentFase = n;
+      document.querySelectorAll('.fase').forEach(f => f.classList.remove('active'));
+      document.getElementById(`fase-${n}`).classList.add('active');
+      // Update stepper
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById(`step-${i}`);
+        el.classList.remove('active', 'done');
+        if (i === n) el.classList.add('active');
+        else if (i < n) el.classList.add('done');
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ── Review render ────────────────────────────────────────
+    function renderReview() {
+      const data = collectData();
+      const e = data.empresa;
+      const v = data.vaga;
+      const c = data.compensacao;
+      const benef = c.beneficios.length ? c.beneficios.join(', ') : '—';
+      const comissao = c.tem_comissao
+        ? `${c.comissao_regras || '—'}${c.comissao_exemplo ? ` · Ex: ${c.comissao_exemplo}` : ''}`
+        : 'Não';
+      document.getElementById('review-content').innerHTML = `
+        <div class="review-section">
+          <div class="review-section-label">A Empresa</div>
+          ${row('Setor', e.setor, 1)}
+          ${row('Propósito', e.proposito, 1)}
+          ${row('Diferencial', e.diferencial, 1)}
+          ${row('Cultura', e.cultura, 1)}
+        </div>
+        <div class="review-section">
+          <div class="review-section-label">A Vaga</div>
+          ${row('Cargo', `${v.cargo}${v.senioridade ? ' · ' + v.senioridade : ''}`, 2)}
+          ${row('Responsabilidades', v.responsabilidades, 2)}
+          ${row('Não faz', v.nao_faz, 2)}
+          ${row('Requisitos mínimos', v.requisitos, 2)}
+          ${row('Modelo', v.modelo || '—', 2)}
+        </div>
+        <div class="review-section">
+          <div class="review-section-label">Compensação</div>
+          ${row('Salário', c.salario || '—', 3)}
+          ${row('Comissão', comissao, 3)}
+          ${row('Benefícios', benef, 3)}
+          ${row('Horário', c.horario || '—', 3)}
+          ${row('Início', c.inicio || '—', 3)}
+        </div>
+      `;
+    }
+
+    function row(key, val, fase) {
+      const display = (val || '—').replace(/\n/g, '<br>');
+      return `<div class="review-field">
+        <span class="review-key">${key}</span>
+        <span class="review-val">${display}</span>
+        <span class="review-edit" onclick="back(${fase + 1})">editar</span>
+      </div>`;
+    }
+
+    // ── Confirm briefing complete ────────────────────────────
+    async function confirmarBriefing() {
+      const btn = document.getElementById('btn-gerar');
+      btn.disabled = true;
+      btn.textContent = 'Salvando...';
+      const data = collectData();
+      await sb.from('jobs').update({
+        briefing_data: data,
+        briefing_status: 'complete'
+      }).eq('id', jobId);
+      document.getElementById('briefing-progress').style.width = '100%';
+      document.getElementById('generate-btn-area').style.display = 'block';
+      btn.textContent = 'Briefing completo';
+      document.getElementById('review-content').insertAdjacentHTML('afterbegin', `
+        <div class="alert alert-ok" style="margin-bottom:24px">
+          Briefing salvo. Clique em "Gerar Assets" no painel ao lado para gerar os documentos.
+        </div>
+      `);
+    }
+
+    // ── Generate assets ──────────────────────────────────────
+    async function generateAssets() {
+      const btn = event.target;
+      btn.disabled = true;
+      btn.textContent = 'Gerando...';
+      const { data: { session: s } } = await sb.auth.getSession();
+      try {
+        await fetch(`${SUPABASE_URL}/functions/v1/generate-assets`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${s.access_token}` },
+          body: JSON.stringify({ job_id: jobId }),
+        });
+        btn.textContent = 'Aguarde — assets sendo gerados';
+        setTimeout(async () => {
+          const { data } = await sb.from('jobs').select('*').eq('id', jobId).single();
+          job = data;
+          updateAssets();
+          btn.disabled = false;
+          btn.textContent = 'Gerar Assets';
+        }, 10000);
+      } catch {
+        btn.disabled = false;
+        btn.textContent = 'Erro — tentar novamente';
+      }
+    }
+
+    // ── Assets panel ─────────────────────────────────────────
+    function updateAssets() {
+      if (!job) return;
+
+      const setFile = (id, url) => {
+        const el = document.getElementById(id);
+        if (url) {
+          el.innerHTML = `<a href="${url}" target="_blank" class="btn btn-secondary btn-sm">Baixar</a>`;
+          el.className = 'asset-status ready';
+        }
+      };
+
+      const setText = (id, text, filename) => {
+        const el = document.getElementById(id);
+        if (text) {
+          const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          el.innerHTML = `<a href="${url}" download="${filename}" class="btn btn-secondary btn-sm">Baixar</a>`;
+          el.className = 'asset-status ready';
+        }
+      };
+
+      setFile('rai-status', job.rai_url);
+      setFile('slides-status', job.slides_url);
+      setFile('creative-status', job.creative_url);
+
+      const idioma = job.briefing_data?.empresa?.idioma_anuncio || 'Português';
+      if (idioma === 'Inglês') {
+        setText('caption-status', job.caption_en, 'legenda-en.txt');
+      } else if (idioma === 'Português e Inglês') {
+        const both = [
+          job.caption_pt ? `PORTUGUÊS:\n\n${job.caption_pt}` : '',
+          job.caption_en ? `INGLÊS:\n\n${job.caption_en}` : '',
+        ].filter(Boolean).join('\n\n---\n\n');
+        setText('caption-status', both || null, 'legendas.txt');
+      } else {
+        setText('caption-status', job.caption_pt, 'legenda-pt.txt');
+      }
+
+      if (job.briefing_status === 'complete' || job.briefing_status === 'assets_ready') {
+        document.getElementById('generate-btn-area').style.display = 'block';
+        document.getElementById('briefing-progress').style.width = '100%';
+      }
+    }
+
+    // ── Criteria ─────────────────────────────────────────────
+    async function loadCriteria() {
+      const { data } = await sb.from('score_criteria').select('*').eq('job_id', jobId);
+      const container = document.getElementById('criteria-list');
+      if (!data?.length) {
+        container.innerHTML = '<p style="font-size:12px;color:#bbb;font-style:normal">Nenhum critério ainda.</p>';
+        container.className = '';
+        return;
+      }
+      container.className = '';
+      container.innerHTML = data.map(c => `
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:.5px solid var(--borda);font-size:13px;font-style:normal">
+          <span>${c.criterion}</span>
+          <span style="font-family:Josefin Sans,sans-serif;font-style:normal;font-size:10px;color:var(--verde)">Peso ${c.weight}</span>
+        </div>
+      `).join('');
+    }
+
+    // ── Init ─────────────────────────────────────────────────
+    async function init() {
+      const session = await requireAuth();
+      if (!session || !jobId) { window.location.href = 'dashboard.html'; return; }
+
+      const { data } = await sb.from('jobs').select('*, clients(name)').eq('id', jobId).single();
+      job = data;
+
+      document.getElementById('job-header').innerHTML = `
+        <div style="font-family:Josefin Sans,sans-serif;font-style:normal;font-size:11px;letter-spacing:.08em;color:#999;text-transform:uppercase">${job.clients?.name || ''}</div>
+        <h1 style="margin-top:4px">${job.title}</h1>
+      `;
+
+      // Pre-fill job title
+      if (job.title) document.getElementById('f2-cargo').value = job.title;
+
+      // Restore saved data
+      if (job.briefing_data) populateForm(job.briefing_data);
+
+      updateAssets();
+      loadCriteria();
+
+      // Restore progress bar
+      if (job.briefing_data) {
+        const filled = countFilled(job.briefing_data);
+        document.getElementById('briefing-progress').style.width = Math.round((filled / TOTAL_FASES) * 100) + '%';
+      }
+    }
+
+    async function logout() { await sb.auth.signOut(); window.location.href = 'index.html'; }
+
+    init();
+  </script>
+</body>
+</html>

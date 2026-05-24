@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trevi — Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .jobs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-top: 24px; }
+    .job-card { text-decoration: none; color: inherit; display: block; }
+    .job-card .card { display: flex; flex-direction: column; gap: 12px; height: 100%; }
+    .job-card-title { font-family: 'Cormorant', serif; font-style: normal; font-size: 20px; color: var(--verde); }
+    .job-card-client { font-family: 'Josefin Sans', sans-serif; font-style: normal; font-size: 11px; letter-spacing: 0.08em; color: #666; }
+    .job-card-actions { display: flex; gap: 8px; margin-top: auto; }
+    .header-row { display: flex; align-items: center; justify-content: space-between; }
+    .empty { text-align: center; padding: 64px 24px; color: #999; }
+    .empty p { font-family: 'Josefin Sans', sans-serif; font-style: normal; font-size: 13px; letter-spacing: 0.06em; }
+    .new-job-form { display: none; background: white; border: 0.5px solid var(--borda); border-radius: var(--radius); padding: 24px; margin-top: 24px; }
+  </style>
+</head>
+<body>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
+
+  <header>
+    <div class="logo"><span>tre</span>vi — Recrutamento</div>
+    <nav>
+      <span class="user-info" id="user-name">...</span>
+      <a href="docs.html">Docs</a>
+      <a href="#" onclick="logout()">Sair</a>
+    </nav>
+  </header>
+
+  <div class="page">
+    <div class="header-row">
+      <h1>Vagas</h1>
+      <button class="btn btn-primary" id="btn-nova" style="display:none" onclick="toggleNovaVaga()">+ Nova Vaga</button>
+    </div>
+
+    <div class="new-job-form" id="nova-vaga-form">
+      <h3>Nova Vaga</h3>
+      <div id="alert-nova" class="alert alert-erro" style="display:none"></div>
+      <div class="form-group">
+        <label>Título da Vaga</label>
+        <input type="text" id="novo-titulo" placeholder="Ex: Media Buyer Sênior">
+      </div>
+      <div style="display:flex;gap:12px">
+        <button class="btn btn-primary" onclick="criarVaga()">Criar</button>
+        <button class="btn btn-secondary" onclick="toggleNovaVaga()">Cancelar</button>
+      </div>
+    </div>
+
+    <div id="jobs-container" class="loading dot-pulse">Carregando</div>
+  </div>
+
+  <script>
+    let profile = null;
+
+    async function init() {
+      const session = await requireAuth();
+      if (!session) return;
+      profile = await getProfile(session.user.id);
+
+      document.getElementById('user-name').textContent =
+        (profile?.name || session.user.email) + ' · ' + (profile?.role || '');
+
+      if (profile?.role === 'admin' || profile?.role === 'client') {
+        document.getElementById('btn-nova').style.display = 'inline-flex';
+      }
+
+      loadJobs();
+    }
+
+    async function loadJobs() {
+      const container = document.getElementById('jobs-container');
+
+      let query = sb.from('jobs').select(`
+        id, title, status, briefing_status, created_at,
+        clients(name),
+        candidates(count)
+      `).order('created_at', { ascending: false });
+
+      const { data: jobs, error } = await query;
+
+      if (error || !jobs?.length) {
+        container.innerHTML = `<div class="empty"><p>Nenhuma vaga ainda.</p></div>`;
+        container.className = '';
+        return;
+      }
+
+      container.className = 'jobs-grid';
+      container.innerHTML = jobs.map(j => {
+        const candidatos = j.candidates?.[0]?.count || 0;
+        const statusLabel = { active: 'Ativa', paused: 'Pausada', closed: 'Encerrada' }[j.status];
+        const briefingLabel = { in_progress: 'Briefing em andamento', complete: 'Briefing completo', assets_ready: 'Assets prontos' }[j.briefing_status];
+        return `
+          <div class="job-card">
+            <div class="card">
+              <div>
+                <div class="job-card-client">${j.clients?.name || '—'}</div>
+                <div class="job-card-title">${j.title}</div>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <span class="badge badge-verde">${statusLabel}</span>
+                <span class="badge badge-cinza">${briefingLabel}</span>
+                <span class="badge badge-cinza">${candidatos} candidatos</span>
+              </div>
+              <div class="job-card-actions">
+                <a href="briefing.html?job=${j.id}" class="btn btn-secondary btn-sm">Briefing</a>
+                <a href="pipeline.html?job=${j.id}" class="btn btn-primary btn-sm">Pipeline</a>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function toggleNovaVaga() {
+      const f = document.getElementById('nova-vaga-form');
+      f.style.display = f.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function criarVaga() {
+      const titulo = document.getElementById('novo-titulo').value.trim();
+      const alert = document.getElementById('alert-nova');
+      if (!titulo) { alert.textContent = 'Informe o título da vaga.'; alert.style.display = 'block'; return; }
+
+      let clientId = null;
+      if (profile.role === 'client') {
+        clientId = profile.client_id;
+      } else {
+        // admin: pegar o primeiro client disponível (em produção: mostrar select)
+        const { data: clients } = await sb.from('clients').select('id').limit(1).single();
+        clientId = clients?.id;
+      }
+
+      const { error } = await sb.from('jobs').insert({ title: titulo, client_id: clientId });
+      if (error) { alert.textContent = 'Erro ao criar vaga.'; alert.style.display = 'block'; return; }
+
+      toggleNovaVaga();
+      document.getElementById('novo-titulo').value = '';
+      loadJobs();
+    }
+
+    async function logout() {
+      await sb.auth.signOut();
+      window.location.href = 'index.html';
+    }
+
+    init();
+  </script>
+</body>
+</html>

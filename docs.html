@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trevi — Documentos</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .docs-layout { display: grid; grid-template-columns: 220px 1fr; gap: 0; min-height: calc(100vh - 60px); }
+
+    /* Sidebar */
+    .docs-sidebar {
+      background: white;
+      border-right: 0.5px solid var(--borda);
+      padding: 32px 0;
+      position: sticky;
+      top: 60px;
+      height: calc(100vh - 60px);
+      overflow-y: auto;
+    }
+    .sidebar-section {
+      padding: 0 20px;
+      margin-bottom: 28px;
+    }
+    .sidebar-label {
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #aaa;
+      margin-bottom: 8px;
+    }
+    .sidebar-link {
+      display: block;
+      padding: 7px 10px;
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      color: #555;
+      text-decoration: none;
+      border-radius: 4px;
+      margin-bottom: 1px;
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s;
+    }
+    .sidebar-link:hover { background: var(--off-dark); color: var(--verde); }
+    .sidebar-link.active { background: rgba(26,58,42,0.1); color: var(--verde); font-weight: 600; }
+
+    /* Doc content */
+    .docs-content {
+      padding: 48px 56px;
+      max-width: 860px;
+    }
+    .doc-section { display: none; }
+    .doc-section.active { display: block; }
+
+    /* Doc typography */
+    .doc-section h1 {
+      font-family: 'Cormorant', serif;
+      font-style: normal;
+      font-size: 36px;
+      color: var(--verde);
+      margin-bottom: 8px;
+    }
+    .doc-section .doc-meta {
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: #999;
+      text-transform: uppercase;
+      margin-bottom: 36px;
+    }
+    .doc-section h2 {
+      font-family: 'Cormorant', serif;
+      font-style: normal;
+      font-size: 24px;
+      color: var(--verde);
+      margin: 36px 0 12px;
+      padding-bottom: 8px;
+      border-bottom: 0.5px solid var(--borda);
+    }
+    .doc-section h3 {
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--preto);
+      margin: 24px 0 10px;
+    }
+    .doc-section p {
+      font-size: 15px;
+      line-height: 1.75;
+      margin-bottom: 12px;
+      color: #222;
+    }
+    .doc-section ul, .doc-section ol {
+      margin: 8px 0 16px 24px;
+    }
+    .doc-section li {
+      font-size: 14px;
+      line-height: 1.7;
+      margin-bottom: 4px;
+    }
+    .doc-section table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 24px;
+      font-size: 13px;
+    }
+    .doc-section th {
+      font-family: 'Josefin Sans', sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #666;
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 0.5px solid var(--borda);
+      background: white;
+    }
+    .doc-section td {
+      padding: 10px 12px;
+      border-bottom: 0.5px solid var(--borda);
+      font-size: 13px;
+      vertical-align: top;
+    }
+    .doc-section tr:hover td { background: rgba(26,58,42,0.02); }
+    .doc-section code {
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      background: #f5f5f5;
+      padding: 2px 5px;
+      border-radius: 3px;
+    }
+    .doc-section pre {
+      background: #f5f5f5;
+      border-radius: 6px;
+      padding: 16px 20px;
+      overflow-x: auto;
+      margin: 12px 0 20px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      border-left: 3px solid var(--verde);
+    }
+    .doc-section blockquote {
+      border-left: 3px solid var(--verde-claro);
+      padding: 8px 16px;
+      margin: 12px 0;
+      background: rgba(26,58,42,0.04);
+      border-radius: 0 4px 4px 0;
+    }
+    .doc-section blockquote p { margin-bottom: 0; font-size: 14px; color: #444; }
+    .doc-section hr {
+      border: none;
+      border-top: 0.5px solid var(--borda);
+      margin: 28px 0;
+    }
+    .status-ok   { color: #2e7d32; font-weight: 600; }
+    .status-wip  { color: #c17900; }
+    .status-todo { color: #999; }
+
+    /* Tag de status */
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .tag-ok   { background: #e6f4ec; color: #2e7d32; }
+    .tag-wip  { background: #fff3e0; color: #c17900; }
+    .tag-todo { background: #f5f5f5; color: #999; }
+  </style>
+</head>
+<body>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
+
+  <header>
+    <div class="logo"><span>tre</span>vi — Docs</div>
+    <nav>
+      <a href="dashboard.html">← Portal</a>
+      <a href="#" onclick="logout()">Sair</a>
+    </nav>
+  </header>
+
+  <div class="docs-layout">
+
+    <!-- Sidebar -->
+    <div class="docs-sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Produto</div>
+        <div class="sidebar-link active" onclick="show('spec')">Status de Construção</div>
+        <div class="sidebar-link" onclick="show('overview')">Visão Geral</div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Metodologia</div>
+        <div class="sidebar-link" onclick="show('playbook')">Playbook Oficial</div>
+        <div class="sidebar-link" onclick="show('perfil')">Quem Contratar</div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">SOPs</div>
+        <div class="sidebar-link" onclick="show('sop1')">01 — Documento RAI</div>
+        <div class="sidebar-link" onclick="show('sop2')">02 — HSL: Hiring Sales Letter</div>
+        <div class="sidebar-link" onclick="show('sop3')">03 — Criativo e Legenda</div>
+        <div class="sidebar-link" onclick="show('sop4')">04 — Campanha Meta Ads</div>
+        <div class="sidebar-link" onclick="show('sop5')">05 — Triagem</div>
+        <div class="sidebar-link" onclick="show('sop6')">06 — Entrevista em Grupo</div>
+        <div class="sidebar-link" onclick="show('sop7')">07 — Entrevista Individual</div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Técnico</div>
+        <div class="sidebar-link" onclick="show('spec-tecnica')">Spec Técnica do Portal</div>
+        <div class="sidebar-link" onclick="show('config')">Configuração do Sistema</div>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="docs-content">
+
+      <!-- ── STATUS DE CONSTRUÇÃO ── -->
+      <div id="doc-spec" class="doc-section active">
+        <h1>Status de Construção</h1>
+        <div class="doc-meta">Produto R$197 · Trevi Recrutamento e Seleção</div>
+
+        <h2>O que está pronto</h2>
+        <table>
+          <thead><tr><th>Componente</th><th>Status</th><th>Onde</th></tr></thead>
+          <tbody>
+            <tr><td>Banco de dados + RLS</td><td><span class="tag tag-ok">Pronto</span></td><td>Supabase cfpasrtz...</td></tr>
+            <tr><td>Auth por papel (admin/colaborador/cliente)</td><td><span class="tag tag-ok">Pronto</span></td><td>index.html + config.js</td></tr>
+            <tr><td>Pipeline kanban (Ranking + Kanban)</td><td><span class="tag tag-ok">Pronto</span></td><td>pipeline.html</td></tr>
+            <tr><td>Dashboard de vagas</td><td><span class="tag tag-ok">Pronto</span></td><td>dashboard.html</td></tr>
+            <tr><td>Chat UI do briefing</td><td><span class="tag tag-ok">Pronto</span></td><td>briefing.html</td></tr>
+            <tr><td>Seed de teste (L&S, Media Buyer, 3 candidatos)</td><td><span class="tag tag-ok">Pronto</span></td><td>Supabase</td></tr>
+            <tr><td>Edge Function: briefing-agent</td><td><span class="tag tag-wip">Em construção</span></td><td>Supabase Functions</td></tr>
+            <tr><td>Edge Function: generate-assets</td><td><span class="tag tag-todo">Pendente</span></td><td>—</td></tr>
+            <tr><td>Geração RAI.docx</td><td><span class="tag tag-todo">Pendente</span></td><td>—</td></tr>
+            <tr><td>Geração Criativo (imagem)</td><td><span class="tag tag-todo">Pendente</span></td><td>—</td></tr>
+            <tr><td>Script HSL</td><td><span class="tag tag-todo">Pendente</span></td><td>—</td></tr>
+            <tr><td>Legenda dos Ads PT/EN</td><td><span class="tag tag-todo">Pendente</span></td><td>—</td></tr>
+            <tr><td>Botão WhatsApp no pipeline</td><td><span class="tag tag-todo">Pendente</span></td><td>pipeline.html</td></tr>
+            <tr><td>Auto-desqualificação sem vídeo Loom</td><td><span class="tag tag-todo">Pendente</span></td><td>Make ou Edge Function</td></tr>
+            <tr><td>Make: JotForm → Loom → Claude → Supabase</td><td><span class="tag tag-todo">Pendente</span></td><td>Make.com</td></tr>
+          </tbody>
+        </table>
+
+        <h2>O que o cliente recebe</h2>
+        <ol>
+          <li>Criativo do anúncio (imagem + script de vídeo)</li>
+          <li>RAI — descritivo do cargo (missão, atribuições, comissão)</li>
+          <li>Script HSL para vídeo Loom (5–10 min)</li>
+          <li>Formulário JotForm configurado</li>
+          <li>Configuração do Meta Ads (campanha de leads)</li>
+          <li>Qualificação automática por IA (health score + análise do vídeo)</li>
+          <li>Pipeline de gestão de candidatos fase a fase</li>
+        </ol>
+
+        <h2>Próximos passos</h2>
+        <ol>
+          <li>Deployar Edge Function <code>briefing-agent</code> (Claude API, 4 blocos, salva mensagem a mensagem)</li>
+          <li>Construir Edge Function <code>generate-assets</code> (RAI.docx, legenda PT/EN, script HSL)</li>
+          <li>Adicionar botão WhatsApp nos cards do pipeline</li>
+          <li>Configurar Make: JotForm webhook → Loom transcript → Claude scoring → Supabase</li>
+          <li>Auto-desqualificação: candidatos sem <code>loom_url</code> → stage <code>disqualified</code></li>
+        </ol>
+      </div>
+
+      <!-- ── VISÃO GERAL ── -->
+      <div id="doc-overview" class="doc-section">
+        <h1>Visão Geral do Produto</h1>
+        <div class="doc-meta">R$197 · Sistema de Recrutamento Trevi</div>
+        <p>Produto low-ticket que entrega o processo seletivo completo como sistema operável pelo próprio cliente.</p>
+        <p><strong>Custo médio por vaga preenchida:</strong> ~R$500 em mídia (Meta Ads)</p>
+        <p><strong>Prazo:</strong> 7 a 14 dias do lançamento da campanha até o candidato selecionado</p>
+
+        <h2>As 7 Fases</h2>
+        <table>
+          <thead><tr><th>Fase</th><th>Saída</th><th>Ferramenta</th></tr></thead>
+          <tbody>
+            <tr><td><strong>1 — Criativo</strong></td><td>Imagem vertical para Meta Ads + script de vídeo opcional</td><td>Claude → GPT-4o</td></tr>
+            <tr><td><strong>2 — RAI</strong></td><td>Descritivo do cargo (.docx): missão, atribuições, compensação</td><td>Briefing chat → geração automática</td></tr>
+            <tr><td><strong>3 — HSL</strong></td><td>Script de vídeo 5–10 min para o fundador gravar no Loom</td><td>Portal gera o script</td></tr>
+            <tr><td><strong>4 — Formulário</strong></td><td>JotForm com HSL embutida, campos obrigatórios e vídeo Loom</td><td>JotForm</td></tr>
+            <tr><td><strong>5 — Ads</strong></td><td>Campanha Meta (topo R$30/dia + meio R$20/dia)</td><td>Meta Ads Manager</td></tr>
+            <tr><td><strong>6 — Qualificação IA</strong></td><td>Health score 0–100 + resumo por critério por candidato</td><td>Make → Claude API</td></tr>
+            <tr><td><strong>7 — Pipeline</strong></td><td>Kanban de gestão de candidatos fase a fase</td><td>Portal Trevi</td></tr>
+          </tbody>
+        </table>
+
+        <h2>Fases do Pipeline</h2>
+        <table>
+          <thead><tr><th>Fase</th><th>Descrição</th></tr></thead>
+          <tbody>
+            <tr><td>Aplicado</td><td>Candidatos novos — ranqueados por health score</td></tr>
+            <tr><td>Triado</td><td>Aprovados na triagem de IA</td></tr>
+            <tr><td>Dinâmica</td><td>Convocados para entrevista em grupo</td></tr>
+            <tr><td>1-1</td><td>Entrevista individual (Topgrading)</td></tr>
+            <tr><td>Proposta enviada</td><td>Oferta feita</td></tr>
+            <tr><td>Contratado</td><td>Processo encerrado com sucesso</td></tr>
+            <tr><td>Desqualificado</td><td>Eliminado em qualquer fase</td></tr>
+            <tr><td>Demitido</td><td>Contratado mas saiu ou foi desligado</td></tr>
+          </tbody>
+        </table>
+
+        <h2>Marca Trevi</h2>
+        <ul>
+          <li>Verde militar: <code>#1A3A2A</code></li>
+          <li>Off-white: <code>#F5F5F5</code></li>
+          <li>Fontes: Cormorant (títulos), Lora itálico (corpo), Josefin Sans (labels)</li>
+          <li>Dado antes de adjetivo. Sem travessão. Tom direto.</li>
+        </ul>
+      </div>
+
+      <!-- ── PLAYBOOK ── -->
+      <div id="doc-playbook" class="doc-section">
+        <h1>Playbook Oficial</h1>
+        <div class="doc-meta">Versão 2.0 · Maio 2026 · Base: License Scale / Ruche Digital</div>
+        <p>Um processo estruturado de 7 etapas para contratar com custo previsível (~R$500 em mídia) sem headhunting.</p>
+
+        <h2>Visão geral do processo</h2>
+        <pre>ETAPA 1 → Documento RAI
+           Responsabilidades, atribuições e incentivos
+           Dupla função: base da seleção + material de onboarding
+
+ETAPA 2 → HSL — Hiring Sales Letter
+           Vídeo de vendas da vaga (5–10 min)
+           Embutido no formulário antes do primeiro campo
+
+ETAPA 3 → Criativo e Legenda do Anúncio
+           Hook baseado na identidade do candidato, não no cargo
+           Feed (1:1) + Stories (9:16)
+
+ETAPA 4 → Campanha Meta Ads
+           Roda SEMPRE em bench (R$ 25–50/dia)
+           Escala para R$ 100–150/dia quando contratando ativamente
+           Conta separada da operação principal
+
+ETAPA 5 → Triagem de Candidatos
+           VA audita vídeos Loom 10 min/dia
+           8–12 aprovados para o grupo
+
+ETAPA 6 → Entrevista em Grupo
+           45–60 min · 8–12 candidatos · Quick-fire questions
+           Regra dos 60 seg · Regra dos 60% de certeza para avançar
+
+ETAPA 7 → Entrevista Individual (1-1)
+           Topgrading + TORC + Reverse Selling
+           Airport Test / Upgrade Test / Culture Test</pre>
+
+        <h2>Para quem é</h2>
+        <ul>
+          <li>Dono ou líder que está contratando errado e pagando o preço no onboarding</li>
+          <li>Quem não tem pipeline e contrata sob pressão quando precisa</li>
+          <li>Quem está pagando agência sem garantia de resultado</li>
+        </ul>
+
+        <blockquote><p><strong>O custo de uma contratação errada é 15x o salário anual do colaborador</strong> — considerando custo monetário, tempo perdido e impacto na cultura.</p></blockquote>
+      </div>
+
+      <!-- ── PERFIL IDEAL ── -->
+      <div id="doc-perfil" class="doc-section">
+        <h1>Quem Contratar</h1>
+        <div class="doc-meta">Perfil ideal · Skill e Will · A-Player traits</div>
+
+        <h2>Eixos de avaliação</h2>
+        <p><strong>Skill</strong> — tem a habilidade técnica para executar a função?</p>
+        <p><strong>Will</strong> — tem a vontade, mentalidade e cultura fit para performar aqui?</p>
+        <p>A maioria dos erros de contratação acontece por contratar alto skill / baixo will.</p>
+
+        <h2>Framework GWC</h2>
+        <table>
+          <thead><tr><th>Fator</th><th>Pergunta central</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Get it</strong></td><td>Entende o que a empresa faz e como seu trabalho se encaixa?</td></tr>
+            <tr><td><strong>Want it</strong></td><td>Ama o que faz? Quer ser um contribuidor real?</td></tr>
+            <tr><td><strong>Capacity</strong></td><td>Tem habilidade, tempo e energia para performar com alta qualidade?</td></tr>
+          </tbody>
+        </table>
+
+        <h2>6 traços de um A-Player</h2>
+        <ol>
+          <li>Incorpora os valores da empresa nas ações, não no discurso</li>
+          <li>Humilde, aberto e responsável — coloca o coletivo acima do ego</li>
+          <li>Performa bem em time, não apenas individualmente</li>
+          <li>Comprometido com autodesenvolvimento contínuo e de forma autônoma</li>
+          <li>Aceita feedback de verdade — e implementa</li>
+          <li>Capacidade de resolver problemas, não apenas reagir a eles</li>
+        </ol>
+
+        <h2>Red Flags</h2>
+        <ul>
+          <li>Inconsistências — história muda ou não fecha</li>
+          <li>Culpa os outros por fracassos passados</li>
+          <li>Respostas genéricas sem exemplos concretos</li>
+          <li>Foco exclusivo em salário antes de qualquer outra pergunta</li>
+          <li>Histórico de trocas frequentes sem progressão clara</li>
+        </ul>
+      </div>
+
+      <!-- ── SOP 01 ── -->
+      <div id="doc-sop1" class="doc-section">
+        <h1>SOP 01 — Documento RAI</h1>
+        <div class="doc-meta">Responsabilidades, Atribuições e Incentivos</div>
+        <p>Primeiro entregável do processo. Dupla função: base da seleção (HSL + formulário) e material de onboarding do colaborador.</p>
+        <blockquote><p>Documentos vagos na seleção viram conflito no onboarding.</p></blockquote>
+        <h2>Processo</h2>
+        <h3>1.1 — Briefing do cargo</h3>
+        <ul>
+          <li>Título do cargo e senioridade</li>
+          <li>3 a 5 responsabilidades principais (objetivas e acionáveis)</li>
+          <li>O que NÃO é responsabilidade — elimina ambiguidade</li>
+          <li>Requisitos mínimos (bloqueantes)</li>
+          <li>Diferenciais desejados (não bloqueantes)</li>
+        </ul>
+        <h3>1.2 — Estrutura de compensação</h3>
+        <ul>
+          <li>Salário fixo (valor exato ou faixa real — sem vagueza)</li>
+          <li>Comissionamento: regras, percentual, teto, exemplos reais</li>
+          <li>Benefícios: VT, VA, home office, flexibilidade</li>
+        </ul>
+        <h3>1.3 — Apresentação da empresa</h3>
+        <ul>
+          <li>Manual da marca disponível? → extrair visão, missão e valores</li>
+          <li>Não tem? → mini-briefing: "Por que essa empresa existe? Que tipo de pessoa performa aqui?"</li>
+        </ul>
+        <h3>1.4 — Montagem do documento</h3>
+        <ol>
+          <li>Quem é a empresa (3 a 5 linhas, sem jargão)</li>
+          <li>Por que estamos contratando agora</li>
+          <li>O que essa pessoa vai fazer</li>
+          <li>O que essa pessoa NÃO vai fazer</li>
+          <li>O que esperamos de quem vai ocupar essa vaga</li>
+          <li>O que oferecemos (compensação completa)</li>
+          <li>Próximos passos do processo seletivo</li>
+        </ol>
+        <h2>KPIs</h2>
+        <table>
+          <thead><tr><th>Indicador</th><th>Meta</th></tr></thead>
+          <tbody>
+            <tr><td>Aprovação do RAI</td><td>Máximo 48h após briefing</td></tr>
+            <tr><td>Rodadas de revisão</td><td>No máximo 2</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ── SOP 02 ── -->
+      <div id="doc-sop2" class="doc-section">
+        <h1>SOP 02 — HSL: Hiring Sales Letter</h1>
+        <div class="doc-meta">Vídeo de vendas da vaga · 5 a 10 minutos</div>
+        <p>A HSL não é um vídeo de apresentação — é uma carta de vendas em vídeo. Serve para atrair candidatos certos e eliminar candidatos errados antes de qualquer triagem.</p>
+        <blockquote><p>Candidato que assiste à HSL e ainda pergunta algo que já foi respondido está eliminado — falta de atenção a detalhes.</p></blockquote>
+        <h2>5 Blocos obrigatórios</h2>
+        <table>
+          <thead><tr><th>Bloco</th><th>Duração</th><th>Conteúdo</th></tr></thead>
+          <tbody>
+            <tr><td>1 — Empresa</td><td>2 a 3 min</td><td>Quem é, propósito real, cultura, diferenciais</td></tr>
+            <tr><td>2 — A vaga</td><td>2 a 3 min</td><td>Cargo, responsabilidades, dia típico, a quem reporta</td></tr>
+            <tr><td>3 — Crescimento</td><td>1 min</td><td>Onde está agora, para onde vai, horizonte de evolução</td></tr>
+            <tr><td>4 — Compensação</td><td>1 a 2 min</td><td>Salário exato (ou faixa real), comissão com exemplos, benefícios</td></tr>
+            <tr><td>5 — Próximos passos</td><td>30 seg</td><td>O que acontece depois do formulário, o que preparar</td></tr>
+          </tbody>
+        </table>
+        <h2>Orientações de gravação</h2>
+        <ul>
+          <li><strong>Quem grava:</strong> dono ou sócio. Autenticidade &gt; produção</li>
+          <li><strong>Formato:</strong> horizontal (16:9). 5 a 10 min. Não editar — autêntico converte mais</li>
+          <li><strong>Qualidade mínima:</strong> áudio limpo (fone/mic), fundo arrumado, sem ruído de fundo</li>
+          <li><strong>Plataforma:</strong> Loom — gravar e embutir link no formulário</li>
+        </ul>
+        <h2>KPIs</h2>
+        <table>
+          <thead><tr><th>Indicador</th><th>Meta</th></tr></thead>
+          <tbody>
+            <tr><td>Taxa de conclusão do formulário após HSL</td><td>Acima de 40%</td></tr>
+            <tr><td>Perguntas básicas recebidas (já respondidas na HSL)</td><td>Menos de 10% dos leads</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ── SOP 03 ── -->
+      <div id="doc-sop3" class="doc-section">
+        <h1>SOP 03 — Criativo e Legenda do Anúncio</h1>
+        <div class="doc-meta">CPL alvo: abaixo de R$15 · CTR alvo: acima de 1,5%</div>
+        <h2>Estrutura da legenda</h2>
+        <pre>[LINHA 1 — HOOK]
+O ângulo mais forte da vaga em 1 linha.
+Não é o cargo. É o benefício ou a identidade do candidato.
+
+[LINHA 2 — CONTEXTO DA EMPRESA]
+1 a 2 linhas: o que faz e o momento atual.
+
+[LINHA 3 — O QUE O CANDIDATO GANHA]
+2 a 3 pontos concretos. Numerados. Sem adjetivos.
+
+[LINHA 4 — CTA]
+1 linha. Verbo específico + ação clara.</pre>
+        <h2>Definição do ângulo do hook</h2>
+        <table>
+          <thead><tr><th>Situação</th><th>Ângulo</th></tr></thead>
+          <tbody>
+            <tr><td>Salário acima do mercado</td><td>Colocar o número na primeira linha</td></tr>
+            <tr><td>Mercado internacional</td><td>Credencial de portfólio internacional</td></tr>
+            <tr><td>Habilidade não utilizada</td><td>"Você tem X. Aqui você é pago por isso."</td></tr>
+            <tr><td>Empresa em crescimento</td><td>Ritmo + oportunidade de carreira</td></tr>
+            <tr><td>Home office / flexibilidade</td><td>Modelo de trabalho como diferencial</td></tr>
+          </tbody>
+        </table>
+        <h2>Criativo visual</h2>
+        <ul>
+          <li><strong>Formato obrigatório:</strong> 1:1 (feed) + 9:16 (stories) — sempre os dois</li>
+          <li><strong>Headline visual:</strong> mesmo ângulo do hook</li>
+          <li><strong>Visual de fundo:</strong> foto do time ou fundador — não banco de imagens</li>
+          <li><strong>CTA:</strong> "Quero participar" / "Apply Now"</li>
+        </ul>
+      </div>
+
+      <!-- ── SOP 04 ── -->
+      <div id="doc-sop4" class="doc-section">
+        <h1>SOP 04 — Campanha Meta Ads</h1>
+        <div class="doc-meta">A campanha nunca para — nem quando não está contratando</div>
+        <h2>Lógica de orçamento</h2>
+        <table>
+          <thead><tr><th>Modo</th><th>Orçamento/dia</th><th>Objetivo</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Bench</strong> (sempre rodando)</td><td>R$25–50</td><td>Manter pipeline permanente</td></tr>
+            <tr><td><strong>Contratação ativa</strong></td><td>R$100–150</td><td>Preencher vaga em 7 a 14 dias</td></tr>
+          </tbody>
+        </table>
+        <blockquote><p>Nunca desligar após contratar. Pausar o anúncio específico e manter em bench. O custo de precisar de alguém sem candidato é muito maior do que R$25/dia.</p></blockquote>
+        <h2>Monitoramento dia 3</h2>
+        <table>
+          <thead><tr><th>Métrica</th><th>Ação se fora do range</th></tr></thead>
+          <tbody>
+            <tr><td>CPL acima de R$20</td><td>Revisar segmentação ou trocar criativo</td></tr>
+            <tr><td>CTR abaixo de 1%</td><td>Trocar headline ou visual</td></tr>
+            <tr><td>Nenhuma aplicação</td><td>Verificar formulário acessível e funcional</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ── SOP 05 ── -->
+      <div id="doc-sop5" class="doc-section">
+        <h1>SOP 05 — Triagem de Candidatos</h1>
+        <div class="doc-meta">Filtro, não decisão de contratação</div>
+        <h2>Rotina diária</h2>
+        <p>VA ou responsável abre o canal <code>#hiring-[cargo]</code> no Slack por 10 minutos pela manhã. Assiste ao vídeo Loom, clica em Aprovar (→ convite automático para o grupo) ou Reprovar (→ e-mail automático).</p>
+        <h2>Critérios de avaliação do vídeo</h2>
+        <table>
+          <thead><tr><th>Critério</th><th>Peso</th></tr></thead>
+          <tbody>
+            <tr><td>Clareza e objetividade de comunicação</td><td>Alto</td></tr>
+            <tr><td>Alinhamento com a cultura descrita na HSL</td><td>Alto</td></tr>
+            <tr><td>Sotaque / fluência (vagas com requisito de idioma)</td><td>Alto (quando aplicável)</td></tr>
+            <tr><td>Energia e motivação percebida</td><td>Médio</td></tr>
+            <tr><td>Experiência relevante mencionada</td><td>Baixo</td></tr>
+          </tbody>
+        </table>
+        <blockquote><p>Experiência tem baixa correlação com sucesso em cargos operacionais. Não eliminar por falta de experiência — avaliar potencial e cultura fit primeiro.</p></blockquote>
+        <h2>Requisitos técnicos pré-1-1</h2>
+        <table>
+          <thead><tr><th>Requisito</th><th>Especificação</th></tr></thead>
+          <tbody>
+            <tr><td>Teste de internet</td><td>Download mín. 25 Mbps / Upload mín. 5 Mbps</td></tr>
+            <tr><td>Fotos do setup</td><td>Computador, mesa, headset — ambiente limpo</td></tr>
+            <tr><td>Referências profissionais</td><td>3 contatos de ex-empregadores</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ── SOP 06 ── -->
+      <div id="doc-sop6" class="doc-section">
+        <h1>SOP 06 — Entrevista em Grupo</h1>
+        <div class="doc-meta">45 a 60 min · 8 a 12 candidatos · Não é dinâmica coletiva</div>
+        <blockquote><p>O que você está procurando: cultura fit, autoconsciência, propósito. Não experiência.</p></blockquote>
+        <h2>Frame-set de abertura</h2>
+        <p><em>"Aqui é [empresa]. Estamos contratando porque estamos crescendo. Vou ser direto: quero que sejam vocês mesmos. Não me deem respostas que acham que eu quero ouvir. Máximo de 60 segundos por resposta. E se houver problema de internet, vou precisar pedir que saia da chamada — internet é requisito não negociável."</em></p>
+        <h2>Quick-fire questions</h2>
+        <table>
+          <thead><tr><th>Pergunta</th><th>O que observar</th></tr></thead>
+          <tbody>
+            <tr><td>"O que mais te estressaria nesse cargo?"</td><td>Honestidade vs. resposta ensaiada</td></tr>
+            <tr><td>"Qual é a sua maior fraqueza?"</td><td>Autoconsciência. Rejeitar "trabalho demais"</td></tr>
+            <tr><td>"Qual é o seu maior ponto forte?"</td><td>Confiança + relevância para o cargo</td></tr>
+            <tr><td>"Em que ambiente você trabalha melhor?"</td><td>Alinhamento com a cultura</td></tr>
+            <tr><td>"O que compõe sua dieta de informação?"</td><td>Mentalidade de crescimento</td></tr>
+            <tr><td>"Coisa mais difícil que você superou?"</td><td>Resiliência real</td></tr>
+            <tr><td>"Mínimo que precisa ganhar por mês?"</td><td>Filtro salarial — perguntar a TODOS</td></tr>
+            <tr><td>"Se eu te contratar, quem mais nessa call você quer no time?"</td><td>Liderança + julgamento — 10 a 20% dos candidatos</td></tr>
+          </tbody>
+        </table>
+        <h2>Regra de decisão</h2>
+        <p>Mais de 60% certo que é boa contratação → avança para 1-1. Não precisa de 100%.</p>
+      </div>
+
+      <!-- ── SOP 07 ── -->
+      <div id="doc-sop7" class="doc-section">
+        <h1>SOP 07 — Entrevista Individual (1-1)</h1>
+        <div class="doc-meta">Topgrading · TORC · Reverse Selling</div>
+        <blockquote><p>A 1-1 é a última linha de defesa contra uma contratação errada. O candidato chegou aqui porque sabe se apresentar bem. O objetivo é quebrar essa camada e chegar ao que ele realmente é.</p></blockquote>
+        <h2>Técnicas principais</h2>
+        <h3>Walkthrough cronológico (Topgrading)</h3>
+        <p>"Me atualiza sobre sua trajetória dos últimos 5 anos — cada posição, o que fazia e quanto tempo ficou."</p>
+        <ul>
+          <li>"Por que você saiu?" — culpa os outros ou assume responsabilidade?</li>
+          <li>"Qual foi seu maior resultado nessa posição? Tem número?"</li>
+        </ul>
+        <h3>Boss Rating (Técnica TORC)</h3>
+        <p>"Como você acha que seu gestor de lá vai te avaliar de 1 a 10 quando eu ligar para ele?"</p>
+        <ul>
+          <li>Score 6 ou menos: red flag — aprofundar por que</li>
+          <li>Só a possibilidade de ligar torna as respostas mais honestas</li>
+        </ul>
+        <h3>Aprofundamento</h3>
+        <ol>
+          <li>"O que especificamente?" — força saída do genérico</li>
+          <li>"Como você fez isso?" — detalha o processo</li>
+          <li>"Me conta mais." — abre espaço</li>
+          <li>"Me dá um exemplo real." — ancora em fato, não teoria</li>
+        </ol>
+        <h3>Reverse Selling</h3>
+        <p>"Em vez de te vender os porquês de trabalhar aqui, vou te dar os motivos para NÃO trabalhar aqui."</p>
+        <ul>
+          <li>O ritmo é intenso. Os padrões são altos. Não há espaço para desculpas.</li>
+          <li>"Depois de tudo isso... você ainda quer?"</li>
+        </ul>
+        <h2>Testes de decisão final</h2>
+        <table>
+          <thead><tr><th>Teste</th><th>Pergunta</th></tr></thead>
+          <tbody>
+            <tr><td>Airport Test</td><td>Ficaria preso 12h com essa pessoa sem problema?</td></tr>
+            <tr><td>Upgrade Test</td><td>É melhor do que quem tinha essa posição antes?</td></tr>
+            <tr><td>Culture Test</td><td>Se todos fossem assim, a empresa ficaria melhor?</td></tr>
+          </tbody>
+        </table>
+        <blockquote><p>Muitos contratam quem <em>poderiam</em> contratar (bom o suficiente) em vez de quem <em>deveriam</em> contratar (verdadeiramente excepcional). Sempre busque o "deveria contratar".</p></blockquote>
+      </div>
+
+      <!-- ── SPEC TÉCNICA ── -->
+      <div id="doc-spec-tecnica" class="doc-section">
+        <h1>Spec Técnica do Portal</h1>
+        <div class="doc-meta">Stack · Schema · Fluxo de dados</div>
+        <h2>Stack</h2>
+        <table>
+          <thead><tr><th>Componente</th><th>Ferramenta</th></tr></thead>
+          <tbody>
+            <tr><td>Banco de dados + Auth</td><td>Supabase (cfpasrtzrppogyoofyri)</td></tr>
+            <tr><td>Formulário de candidatura</td><td>JotForm</td></tr>
+            <tr><td>Scoring por IA</td><td>Make → Claude/GPT API</td></tr>
+            <tr><td>Portal</td><td>HTML/CSS/JS vanilla + Supabase JS SDK</td></tr>
+            <tr><td>Edge Functions</td><td>Supabase Functions (Deno)</td></tr>
+            <tr><td>Automação</td><td>Make.com</td></tr>
+          </tbody>
+        </table>
+        <h2>Fluxo de dados</h2>
+        <pre>Candidato preenche JotForm
+      ↓
+Webhook JotForm → Make (trigger)
+      ↓
+Make busca transcrição do Loom do candidato
+      ↓
+Make envia transcrição + critérios → Claude API
+      ↓
+Claude retorna: score (0–100) + resumo por critério
+      ↓
+Make insere candidato + score no Supabase
+      ↓
+Portal atualiza automaticamente (Supabase Realtime)</pre>
+        <h2>Papéis e permissões</h2>
+        <table>
+          <thead><tr><th>Papel</th><th>Acesso</th></tr></thead>
+          <tbody>
+            <tr><td>Admin (Ramon)</td><td>Acesso total — CRUD em tudo</td></tr>
+            <tr><td>Colaborador A</td><td>Lê e edita todos os clientes e processos</td></tr>
+            <tr><td>Colaborador B</td><td>Apenas clientes atribuídos</td></tr>
+            <tr><td>Cliente</td><td>Apenas suas próprias vagas e candidatos</td></tr>
+          </tbody>
+        </table>
+        <h2>Edge Functions pendentes</h2>
+        <table>
+          <thead><tr><th>Function</th><th>O que faz</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><code>briefing-agent</code></td><td>Claude API · 4 blocos · salva mensagem a mensagem</td><td><span class="tag tag-wip">Em construção</span></td></tr>
+            <tr><td><code>generate-assets</code></td><td>Gera RAI.docx, legenda PT/EN, script HSL, criativo</td><td><span class="tag tag-todo">Pendente</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ── CONFIGURAÇÃO DO SISTEMA ── -->
+      <div id="doc-config" class="doc-section">
+        <h1>Configuração do Sistema</h1>
+        <div class="doc-meta">JotForm · Meta Ads · GHL · Slack</div>
+        <h2>JotForm — estrutura do formulário</h2>
+        <ol>
+          <li>Vídeo HSL embutido no topo (antes de qualquer campo)</li>
+          <li>Nome completo</li>
+          <li>E-mail</li>
+          <li>WhatsApp (formato: 55 + DDD + número)</li>
+          <li>Cidade e estado</li>
+          <li>Link do vídeo Loom de apresentação (campo obrigatório)</li>
+          <li>Expectativa salarial</li>
+          <li>Disponibilidade de início</li>
+        </ol>
+        <blockquote><p>Candidato sem vídeo Loom = desqualificação automática.</p></blockquote>
+        <h2>Meta Ads — conta separada</h2>
+        <p>Usar conta separada da operação de clientes. Anúncios de recrutamento têm histórico maior de banimento.</p>
+        <table>
+          <thead><tr><th>Campanha</th><th>Objetivo</th><th>Verba/dia</th><th>Segmentação</th></tr></thead>
+          <tbody>
+            <tr><td>Topo de funil</td><td>Leads</td><td>R$30</td><td>Ampla, sem restrição de interesse</td></tr>
+            <tr><td>Meio de funil</td><td>Leads</td><td>R$20</td><td>Interesses relacionados ao cargo</td></tr>
+            <tr><td>Bench (sempre rodando)</td><td>Leads</td><td>R$25–50</td><td>Idem ao ativo</td></tr>
+          </tbody>
+        </table>
+        <h2>GHL — Pipeline</h2>
+        <p>Sub-conta separada para contratação. Automação Slack via canal <code>#hiring-[cargo]</code> com trigger links de Aprovar/Reprovar para cada nova candidatura.</p>
+        <h2>Checklist de configuração inicial</h2>
+        <ul>
+          <li>☐ Conta de anúncios separada criada no Meta</li>
+          <li>☐ JotForm criado com HSL embutida e testado em aba privada</li>
+          <li>☐ Sub-conta GHL criada com pipeline configurado</li>
+          <li>☐ Canal Slack <code>#hiring-[cargo]</code> criado</li>
+          <li>☐ Automação JotForm → GHL → Slack ativa</li>
+          <li>☐ Templates de e-mail configurados no GHL</li>
+          <li>☐ Campanha Meta Ads criada e ativa (bench)</li>
+        </ul>
+      </div>
+
+    </div><!-- /docs-content -->
+  </div><!-- /docs-layout -->
+
+  <script>
+    function show(id) {
+      document.querySelectorAll('.doc-section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+      document.getElementById('doc-' + id).classList.add('active');
+      event.target.classList.add('active');
+      window.scrollTo(0, 0);
+    }
+
+    async function logout() { await sb.auth.signOut(); window.location.href = 'index.html'; }
+
+    // Auth check
+    (async () => {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) window.location.href = 'index.html';
+    })();
+  </script>
+</body>
+</html>
