@@ -241,14 +241,14 @@
             <tr><td>Dashboard de vagas</td><td><span class="tag tag-ok">Pronto</span></td><td>dashboard.html</td></tr>
             <tr><td>Chat UI do briefing</td><td><span class="tag tag-ok">Pronto</span></td><td>briefing.html</td></tr>
             <tr><td>Seed de teste (L&S, Media Buyer, 3 candidatos)</td><td><span class="tag tag-ok">Pronto</span></td><td>Supabase</td></tr>
-            <tr><td>Edge Function: briefing-agent</td><td><span class="tag tag-wip">Em construção</span></td><td>Supabase Functions</td></tr>
-            <tr><td>Edge Function: generate-assets</td><td><span class="tag tag-todo">Pendente</span></td><td>—</td></tr>
-            <tr><td>Geração RAI.docx</td><td><span class="tag tag-todo">Pendente</span></td><td>—</td></tr>
-            <tr><td>Geração Criativo (imagem)</td><td><span class="tag tag-todo">Pendente</span></td><td>—</td></tr>
-            <tr><td>Script HSL</td><td><span class="tag tag-todo">Pendente</span></td><td>—</td></tr>
-            <tr><td>Legenda dos Ads PT/EN</td><td><span class="tag tag-todo">Pendente</span></td><td>—</td></tr>
-            <tr><td>Botão WhatsApp no pipeline</td><td><span class="tag tag-todo">Pendente</span></td><td>pipeline.html</td></tr>
-            <tr><td>Auto-desqualificação sem vídeo Loom</td><td><span class="tag tag-todo">Pendente</span></td><td>Make ou Edge Function</td></tr>
+            <tr><td>Edge Function: briefing-agent</td><td><span class="tag tag-ok">Pronto</span></td><td>Supabase Functions (v3)</td></tr>
+            <tr><td>Edge Function: generate-assets</td><td><span class="tag tag-ok">Pronto</span></td><td>Supabase Functions (v3)</td></tr>
+            <tr><td>Geração RAI (markdown → storage)</td><td><span class="tag tag-ok">Pronto</span></td><td>generate-assets</td></tr>
+            <tr><td>Script HSL (markdown → storage)</td><td><span class="tag tag-ok">Pronto</span></td><td>generate-assets</td></tr>
+            <tr><td>Legenda dos Ads PT/EN</td><td><span class="tag tag-ok">Pronto</span></td><td>generate-assets</td></tr>
+            <tr><td>Geração criativo (imagem)</td><td><span class="tag tag-todo">Pendente</span></td><td>—</td></tr>
+            <tr><td>Botão WhatsApp no pipeline</td><td><span class="tag tag-ok">Pronto</span></td><td>pipeline.html</td></tr>
+            <tr><td>Auto-desqualificação sem vídeo Loom</td><td><span class="tag tag-ok">Pronto</span></td><td>pipeline.html (autoDisqualify)</td></tr>
             <tr><td>Make: JotForm → Loom → Claude → Supabase</td><td><span class="tag tag-todo">Pendente</span></td><td>Make.com</td></tr>
           </tbody>
         </table>
@@ -266,11 +266,10 @@
 
         <h2>Próximos passos</h2>
         <ol>
-          <li>Deployar Edge Function <code>briefing-agent</code> (Claude API, 4 blocos, salva mensagem a mensagem)</li>
-          <li>Construir Edge Function <code>generate-assets</code> (RAI.docx, legenda PT/EN, script HSL)</li>
-          <li>Adicionar botão WhatsApp nos cards do pipeline</li>
           <li>Configurar Make: JotForm webhook → Loom transcript → Claude scoring → Supabase</li>
-          <li>Auto-desqualificação: candidatos sem <code>loom_url</code> → stage <code>disqualified</code></li>
+          <li>Geração de criativo (imagem do anúncio) via API de imagem</li>
+          <li>Tela de onboarding do cliente (guia passo a passo no estilo Viver de IA)</li>
+          <li>Login por link mágico (sem senha) — já atualizado em <code>index.html</code></li>
         </ol>
       </div>
 
@@ -688,8 +687,8 @@ Portal atualiza automaticamente (Supabase Realtime)</pre>
         <table>
           <thead><tr><th>Function</th><th>O que faz</th><th>Status</th></tr></thead>
           <tbody>
-            <tr><td><code>briefing-agent</code></td><td>Claude API · 4 blocos · salva mensagem a mensagem</td><td><span class="tag tag-wip">Em construção</span></td></tr>
-            <tr><td><code>generate-assets</code></td><td>Gera RAI.docx, legenda PT/EN, script HSL, criativo</td><td><span class="tag tag-todo">Pendente</span></td></tr>
+            <tr><td><code>briefing-agent</code></td><td>Claude API · 4 blocos · extrai briefing_data ao completar</td><td><span class="tag tag-ok">Pronto (v3)</span></td></tr>
+            <tr><td><code>generate-assets</code></td><td>Gera RAI, script HSL, legenda PT/EN · salva no storage</td><td><span class="tag tag-ok">Pronto (v3)</span></td></tr>
           </tbody>
         </table>
       </div>

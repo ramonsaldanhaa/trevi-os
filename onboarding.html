@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trevi — Implementação</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── Step tracker ── */
+    .impl-steps {
+      display: flex;
+      align-items: flex-start;
+      gap: 0;
+      margin: 40px 0 48px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .impl-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      min-width: 100px;
+      position: relative;
+      cursor: pointer;
+    }
+    .impl-step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      top: 18px;
+      left: calc(50% + 18px);
+      right: calc(-50% + 18px);
+      height: 1px;
+      background: var(--borda);
+      z-index: 0;
+    }
+    .impl-step.done:not(:last-child)::after { background: var(--verde); }
+
+    .step-circle {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1.5px solid var(--borda);
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 13px;
+      color: #bbb;
+      position: relative;
+      z-index: 1;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .impl-step.active .step-circle {
+      border-color: var(--verde);
+      background: var(--verde);
+      color: white;
+    }
+    .impl-step.done .step-circle {
+      border-color: var(--verde);
+      background: rgba(26,58,42,0.1);
+      color: var(--verde);
+    }
+    .step-name {
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #bbb;
+      margin-top: 8px;
+      text-align: center;
+      transition: color 0.2s;
+    }
+    .impl-step.active .step-name { color: var(--verde); font-weight: 600; }
+    .impl-step.done .step-name { color: var(--verde); }
+
+    /* ── Step panels ── */
+    .step-panel { display: none; }
+    .step-panel.active { display: block; }
+
+    .panel-header {
+      margin-bottom: 32px;
+    }
+    .panel-title {
+      font-family: 'Cormorant', serif;
+      font-style: normal;
+      font-size: 32px;
+      color: var(--verde);
+      margin-bottom: 6px;
+    }
+    .panel-sub {
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #999;
+    }
+
+    /* ── Tool cards ── */
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .tool-card {
+      background: white;
+      border: 0.5px solid var(--borda);
+      border-radius: var(--radius);
+      padding: 20px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+      position: relative;
+    }
+    .tool-card:hover { border-color: var(--verde); }
+    .tool-card.checked { border-color: var(--verde); background: rgba(26,58,42,0.04); }
+    .tool-badge {
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--verde);
+      margin-bottom: 10px;
+    }
+    .tool-name {
+      font-family: 'Cormorant', serif;
+      font-style: normal;
+      font-size: 18px;
+      color: var(--verde);
+      margin-bottom: 4px;
+    }
+    .tool-desc {
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 11px;
+      color: #888;
+      letter-spacing: 0.04em;
+      line-height: 1.5;
+    }
+    .tool-check {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 1.5px solid var(--borda);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: transparent;
+      transition: all 0.2s;
+    }
+    .tool-card.checked .tool-check {
+      background: var(--verde);
+      border-color: var(--verde);
+      color: white;
+    }
+
+    /* ── Asset cards ── */
+    .asset-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .asset-card {
+      background: white;
+      border: 0.5px solid var(--borda);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .asset-card-label {
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #bbb;
+    }
+    .asset-card-name {
+      font-family: 'Cormorant', serif;
+      font-style: normal;
+      font-size: 20px;
+      color: var(--verde);
+    }
+    .asset-card-desc {
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 11px;
+      color: #888;
+      line-height: 1.5;
+    }
+
+    /* ── Checklist ── */
+    .checklist { list-style: none; margin-bottom: 32px; }
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 0.5px solid var(--borda);
+      font-size: 14px;
+      font-style: normal;
+      cursor: pointer;
+    }
+    .checklist li:last-child { border-bottom: none; }
+    .checklist li .check-box {
+      width: 18px;
+      height: 18px;
+      border: 1.5px solid var(--borda);
+      border-radius: 3px;
+      flex-shrink: 0;
+      margin-top: 1px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: transparent;
+      transition: all 0.15s;
+    }
+    .checklist li.done .check-box {
+      background: var(--verde);
+      border-color: var(--verde);
+      color: white;
+    }
+    .checklist li.done .check-text { text-decoration: line-through; color: #bbb; }
+    .check-text { line-height: 1.5; }
+
+    /* ── CTA row ── */
+    .cta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 24px;
+      border-top: 0.5px solid var(--borda);
+      margin-top: 16px;
+    }
+    .cta-row .saving {
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 11px;
+      color: #bbb;
+      letter-spacing: 0.06em;
+    }
+
+    /* ── Progress summary ── */
+    .progress-summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .progress-card {
+      background: white;
+      border: 0.5px solid var(--borda);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .progress-card-label {
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #bbb;
+      margin-bottom: 10px;
+    }
+    .progress-pct {
+      font-family: 'Cormorant', serif;
+      font-style: normal;
+      font-size: 36px;
+      color: var(--verde);
+      margin-bottom: 8px;
+    }
+    .progress-bar-wrap {
+      height: 3px;
+      background: var(--borda);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--verde);
+      border-radius: 2px;
+      transition: width 0.4s;
+    }
+    .step-status-list { margin-top: 12px; }
+    .step-status-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 0;
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      color: #999;
+    }
+    .step-status-item.ok { color: var(--verde); }
+    .step-status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--borda);
+      flex-shrink: 0;
+    }
+    .step-status-item.ok .step-status-dot { background: var(--verde); }
+
+    /* ── Suporte ── */
+    .suporte-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .suporte-card {
+      background: white;
+      border: 0.5px solid var(--borda);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+    .suporte-label {
+      font-family: 'Josefin Sans', sans-serif;
+      font-style: normal;
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #bbb;
+      margin-bottom: 12px;
+    }
+    .suporte-title {
+      font-family: 'Cormorant', serif;
+      font-style: normal;
+      font-size: 22px;
+      color: var(--verde);
+      margin-bottom: 8px;
+    }
+    .suporte-desc {
+      font-size: 13px;
+      font-style: normal;
+      color: #555;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
+
+  <header>
+    <div class="logo"><span>tre</span>vi — Implementação</div>
+    <nav>
+      <span class="user-info" id="user-name">...</span>
+      <a href="dashboard.html">← Vagas</a>
+      <a href="#" onclick="logout()">Sair</a>
+    </nav>
+  </header>
+
+  <div class="page">
+    <div id="job-header" style="margin-bottom: 8px">
+      <div class="loading dot-pulse" style="padding:8px 0">Carregando</div>
+    </div>
+
+    <!-- Step tracker -->
+    <div class="impl-steps" id="step-tracker">
+      <div class="impl-step active" id="nav-1" onclick="goStep(1)">
+        <div class="step-circle">1</div>
+        <div class="step-name">Briefing</div>
+      </div>
+      <div class="impl-step" id="nav-2" onclick="goStep(2)">
+        <div class="step-circle">2</div>
+        <div class="step-name">Materiais</div>
+      </div>
+      <div class="impl-step" id="nav-3" onclick="goStep(3)">
+        <div class="step-circle">3</div>
+        <div class="step-name">Configuração</div>
+      </div>
+      <div class="impl-step" id="nav-4" onclick="goStep(4)">
+        <div class="step-circle">4</div>
+        <div class="step-name">Pipeline</div>
+      </div>
+      <div class="impl-step" id="nav-5" onclick="goStep(5)">
+        <div class="step-circle">5</div>
+        <div class="step-name">Suporte</div>
+      </div>
+    </div>
+
+    <!-- ── STEP 1: BRIEFING ── -->
+    <div class="step-panel active" id="panel-1">
+      <div class="panel-header">
+        <div class="panel-title">Briefing da Vaga</div>
+        <div class="panel-sub">Colete as informações que vão gerar todos os materiais automaticamente</div>
+      </div>
+
+      <p style="font-size:15px;line-height:1.7;font-style:normal;color:#444;margin-bottom:24px">
+        O briefing é o ponto de partida. Com ele preenchido, o sistema gera automaticamente o RAI, o script HSL e a legenda do anúncio. Leva menos de 10 minutos.
+      </p>
+
+      <div id="briefing-status-block" style="margin-bottom:28px"></div>
+
+      <div class="cta-row" style="border-top:none;padding-top:0;margin-top:0">
+        <span></span>
+        <a id="btn-briefing" href="#" class="btn btn-primary">Ir para o Briefing →</a>
+      </div>
+    </div>
+
+    <!-- ── STEP 2: MATERIAIS ── -->
+    <div class="step-panel" id="panel-2">
+      <div class="panel-header">
+        <div class="panel-title">Materiais da Vaga</div>
+        <div class="panel-sub">Baixe os documentos gerados automaticamente pelo sistema</div>
+      </div>
+
+      <div class="asset-grid" id="asset-grid">
+        <div class="loading dot-pulse" style="grid-column:1/-1;padding:32px">Carregando assets</div>
+      </div>
+
+      <div class="cta-row">
+        <button class="btn btn-secondary" onclick="goStep(1)">← Briefing</button>
+        <button class="btn btn-primary" onclick="goStep(3)">Próximo: Configuração →</button>
+      </div>
+    </div>
+
+    <!-- ── STEP 3: CONFIGURAÇÃO ── -->
+    <div class="step-panel" id="panel-3">
+      <div class="panel-header">
+        <div class="panel-title">Configuração do Sistema</div>
+        <div class="panel-sub">Ative cada ferramenta do processo antes de lançar a campanha</div>
+      </div>
+
+      <div class="tool-grid">
+        <div class="tool-card" id="tool-jotform" onclick="toggleTool('jotform')">
+          <div class="tool-check">✓</div>
+          <div class="tool-badge">Formulário</div>
+          <div class="tool-name">JotForm</div>
+          <div class="tool-desc">Configure o formulário com o vídeo HSL no topo e o campo Loom obrigatório.</div>
+        </div>
+        <div class="tool-card" id="tool-meta" onclick="toggleTool('meta')">
+          <div class="tool-check">✓</div>
+          <div class="tool-badge">Anúncios</div>
+          <div class="tool-name">Meta Ads</div>
+          <div class="tool-desc">Crie as duas campanhas (topo R$30/dia + meio R$20/dia) em conta separada.</div>
+        </div>
+        <div class="tool-card" id="tool-make" onclick="toggleTool('make')">
+          <div class="tool-check">✓</div>
+          <div class="tool-badge">Automação</div>
+          <div class="tool-name">Make</div>
+          <div class="tool-desc">Conecte o webhook JotForm → transcrição Loom → scoring Claude → Supabase.</div>
+        </div>
+        <div class="tool-card" id="tool-loom" onclick="toggleTool('loom')">
+          <div class="tool-check">✓</div>
+          <div class="tool-badge">Vídeo HSL</div>
+          <div class="tool-name">Loom</div>
+          <div class="tool-desc">Grave o vídeo HSL usando o script gerado. 5 a 10 minutos. Sem edição.</div>
+        </div>
+      </div>
+
+      <div class="cta-row">
+        <button class="btn btn-secondary" onclick="goStep(2)">← Materiais</button>
+        <button class="btn btn-primary" onclick="markConfigDone()">Marcar como concluído →</button>
+      </div>
+    </div>
+
+    <!-- ── STEP 4: PIPELINE ── -->
+    <div class="step-panel" id="panel-4">
+      <div class="panel-header">
+        <div class="panel-title">Pipeline de Candidatos</div>
+        <div class="panel-sub">Gerencie os candidatos fase a fase com ranking por score de IA</div>
+      </div>
+
+      <p style="font-size:15px;line-height:1.7;font-style:normal;color:#444;margin-bottom:24px">
+        Assim que as candidaturas começarem a chegar via JotForm, o Make transcreve o vídeo Loom, o Claude calcula o health score (0–100) e o candidato entra automaticamente no pipeline ranqueado.
+      </p>
+
+      <div class="tool-grid">
+        <div class="tool-card" style="cursor:default">
+          <div class="tool-badge">Ranking</div>
+          <div class="tool-name">Aplicados</div>
+          <div class="tool-desc">Candidatos novos ranqueados por health score. Sem vídeo = desqualificação automática.</div>
+        </div>
+        <div class="tool-card" style="cursor:default">
+          <div class="tool-badge">Kanban</div>
+          <div class="tool-name">Fases Seguintes</div>
+          <div class="tool-desc">Triado → Dinâmica → 1-1 → Proposta → Contratado. Arraste para mover entre fases.</div>
+        </div>
+      </div>
+
+      <div class="cta-row">
+        <button class="btn btn-secondary" onclick="goStep(3)">← Configuração</button>
+        <a id="btn-pipeline" href="#" class="btn btn-primary">Abrir Pipeline →</a>
+      </div>
+    </div>
+
+    <!-- ── STEP 5: SUPORTE ── -->
+    <div class="step-panel" id="panel-5">
+      <div class="panel-header">
+        <div class="panel-title">Suporte e Conclusão</div>
+        <div class="panel-sub">Recursos de apoio e próximas etapas do processo</div>
+      </div>
+
+      <div class="progress-summary" id="progress-summary">
+        <div class="progress-card">
+          <div class="progress-card-label">Seu progresso</div>
+          <div class="progress-pct" id="pct-label">0%</div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="pct-bar" style="width:0%"></div>
+          </div>
+          <div class="step-status-list" id="step-status-list"></div>
+        </div>
+        <div class="progress-card">
+          <div class="progress-card-label">Próximos passos</div>
+          <div id="next-steps-content" style="font-family:'Josefin Sans',sans-serif;font-style:normal;font-size:12px;line-height:1.8;color:#666;letter-spacing:.04em"></div>
+        </div>
+      </div>
+
+      <div class="suporte-grid">
+        <div class="suporte-card">
+          <div class="suporte-label">Suporte direto</div>
+          <div class="suporte-title">Dúvidas?</div>
+          <div class="suporte-desc">Nossa equipe está disponível de segunda a sexta, das 9h às 18h.</div>
+          <a href="https://wa.me/5511999999999" target="_blank" class="btn btn-primary btn-sm">Falar no WhatsApp</a>
+        </div>
+        <div class="suporte-card">
+          <div class="suporte-label">Documentação</div>
+          <div class="suporte-title">SOPs e Guias</div>
+          <div class="suporte-desc">Playbook completo com SOPs de triagem, entrevista em grupo e 1-1.</div>
+          <a href="docs.html" class="btn btn-secondary btn-sm">Ver documentação</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const jobId = jobParam();
+    let job = null;
+    let currentStep = 1;
+    const TOTAL_STEPS = 5;
+    const toolChecks = { jotform: false, meta: false, make: false, loom: false };
+
+    // ── Init ────────────────────────────────────────────────────
+    async function init() {
+      const session = await requireAuth();
+      if (!session || !jobId) { window.location.href = 'dashboard.html'; return; }
+
+      const profile = await getProfile(session.user.id);
+      document.getElementById('user-name').textContent =
+        (profile?.name || session.user.email) + ' · ' + (profile?.role || '');
+
+      const { data } = await sb.from('jobs').select('*, clients(name)').eq('id', jobId).single();
+      job = data;
+
+      document.getElementById('job-header').innerHTML = `
+        <div style="font-family:Josefin Sans,sans-serif;font-style:normal;font-size:11px;letter-spacing:.08em;color:#999;text-transform:uppercase">${job.clients?.name || ''}</div>
+        <h1 style="margin-top:4px">${job.title}</h1>
+      `;
+
+      document.getElementById('btn-briefing').href = `briefing.html?job=${jobId}`;
+      document.getElementById('btn-pipeline').href = `pipeline.html?job=${jobId}`;
+
+      updateBriefingStatus();
+      updateAssets();
+      updateProgress();
+    }
+
+    // ── Briefing status block ────────────────────────────────────
+    function updateBriefingStatus() {
+      const el = document.getElementById('briefing-status-block');
+      const status = job?.briefing_status;
+      if (status === 'assets_ready') {
+        el.innerHTML = `<div class="alert alert-ok">Briefing completo. Assets gerados e disponíveis na etapa Materiais.</div>`;
+      } else if (status === 'complete') {
+        el.innerHTML = `<div class="alert alert-ok">Briefing confirmado. Acesse o briefing para gerar os assets.</div>`;
+      } else {
+        el.innerHTML = `<div class="alert" style="background:rgba(26,58,42,0.06);border:.5px solid var(--verde-claro);color:#444">Briefing em andamento. Complete todas as etapas e confirme para gerar os materiais automaticamente.</div>`;
+      }
+    }
+
+    // ── Assets ──────────────────────────────────────────────────
+    function updateAssets() {
+      const grid = document.getElementById('asset-grid');
+      if (!job) return;
+
+      const assets = [
+        {
+          key: 'rai_url',
+          label: 'Descritivo do Cargo',
+          name: 'RAI',
+          desc: 'Missão, atribuições, comissionamento e benefícios.',
+          url: job.rai_url,
+        },
+        {
+          key: 'slides_url',
+          label: 'Script de Vídeo',
+          name: 'HSL',
+          desc: 'Script de 5 a 10 min para o fundador gravar no Loom.',
+          url: job.slides_url,
+        },
+        {
+          key: 'caption_pt',
+          label: 'Legenda do Anúncio',
+          name: 'Legenda PT',
+          desc: 'Legenda para o Meta Ads em português.',
+          text: job.caption_pt,
+        },
+        {
+          key: 'caption_en',
+          label: 'Ad Caption',
+          name: 'Legenda EN',
+          desc: 'Legenda para o Meta Ads em inglês.',
+          text: job.caption_en,
+        },
+      ];
+
+      grid.innerHTML = assets.map(a => {
+        const ready = !!(a.url || a.text);
+        const actionBtn = ready
+          ? (a.url
+              ? `<a href="${a.url}" target="_blank" class="btn btn-secondary btn-sm">Baixar</a>`
+              : `<button class="btn btn-secondary btn-sm" onclick="downloadText(${JSON.stringify(a.text)}, '${a.key}.txt')">Baixar</button>`)
+          : `<span style="font-family:Josefin Sans,sans-serif;font-style:normal;font-size:10px;color:#bbb;letter-spacing:.06em">Aguardando briefing</span>`;
+        return `
+          <div class="asset-card">
+            <div class="asset-card-label">${a.label}</div>
+            <div class="asset-card-name">${a.name}</div>
+            <div class="asset-card-desc">${a.desc}</div>
+            ${actionBtn}
+          </div>`;
+      }).join('');
+    }
+
+    function downloadText(text, filename) {
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // ── Tool toggles ─────────────────────────────────────────────
+    function toggleTool(key) {
+      toolChecks[key] = !toolChecks[key];
+      const card = document.getElementById(`tool-${key}`);
+      card.classList.toggle('checked', toolChecks[key]);
+    }
+
+    function markConfigDone() {
+      const allChecked = Object.values(toolChecks).every(Boolean);
+      if (!allChecked) {
+        const unchecked = Object.entries(toolChecks).filter(([,v]) => !v).map(([k]) => k);
+        if (!confirm(`Ainda há itens não marcados: ${unchecked.join(', ')}.\nMarcar como concluído mesmo assim?`)) return;
+      }
+      saveProgress('config_done', true);
+      goStep(4);
+    }
+
+    // ── Progress ─────────────────────────────────────────────────
+    async function saveProgress(key, value) {
+      const meta = job.meta || {};
+      meta[key] = value;
+      await sb.from('jobs').update({ meta }).eq('id', jobId).catch(() => {});
+    }
+
+    function updateProgress() {
+      const steps = [
+        { label: 'Briefing', done: ['complete','assets_ready'].includes(job?.briefing_status) },
+        { label: 'Materiais', done: !!(job?.rai_url) },
+        { label: 'Configuração', done: false },
+        { label: 'Pipeline', done: false },
+        { label: 'Suporte', done: false },
+      ];
+      const done = steps.filter(s => s.done).length;
+      const pct = Math.round((done / TOTAL_STEPS) * 100);
+
+      document.getElementById('pct-label').textContent = pct + '%';
+      document.getElementById('pct-bar').style.width = pct + '%';
+
+      document.getElementById('step-status-list').innerHTML = steps.map(s => `
+        <div class="step-status-item ${s.done ? 'ok' : ''}">
+          <div class="step-status-dot"></div>
+          ${s.label}
+        </div>
+      `).join('');
+
+      const pending = steps.filter(s => !s.done).map(s => s.label);
+      const nextContent = pending.length
+        ? pending.map(p => `— ${p}`).join('<br>')
+        : 'Processo completo.';
+      document.getElementById('next-steps-content').innerHTML = nextContent;
+
+      // Update tracker dots
+      steps.forEach((s, i) => {
+        const nav = document.getElementById(`nav-${i + 1}`);
+        if (s.done) {
+          nav.classList.add('done');
+          nav.querySelector('.step-circle').textContent = '✓';
+        }
+      });
+    }
+
+    // ── Navigation ───────────────────────────────────────────────
+    function goStep(n) {
+      currentStep = n;
+      document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById(`panel-${n}`).classList.add('active');
+      document.querySelectorAll('.impl-step').forEach((el, i) => {
+        el.classList.remove('active');
+        if (i + 1 === n) el.classList.add('active');
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      if (n === 2) updateAssets();
+      if (n === 5) updateProgress();
+    }
+
+    async function logout() { await sb.auth.signOut(); window.location.href = 'index.html'; }
+
+    init();
+  </script>
+</body>
+</html>
